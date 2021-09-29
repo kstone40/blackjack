@@ -25,7 +25,6 @@ st.set_page_config(page_title='Blackjack Strategy Simulator',layout='wide')
 #Main page output
 #Title
 st.title('Blackjack Strategy Simulator')
-st.header('ISyE 6644 Fall 2021 Course Project')
 st.write('v1.0, Sep 2021, Kevin Stone')
 
 st.subheader('First, consider reviewing the fundamentals below.')
@@ -40,7 +39,7 @@ for file in list_of_strats:
 #Load in all of the rules from txt files in ./Rules
 list_of_rules = glob.glob('./Rules/*.txt')   
 for file in list_of_rules:
-    header_name = file.split('/')[1].split('.txt')[0]
+    header_name = file.split('/')[2].split('.txt')[0]
     with st.expander(header_name):
         with open(file,'r') as f:
             st.markdown(f.read())
