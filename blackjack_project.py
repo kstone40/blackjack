@@ -60,20 +60,20 @@ class player:
         #Load player strategies from CSV decision tables
         self.strat = strat
         if strat['Hard'] == 0:
-            self.hard_strategy = pd.read_csv("Strategies\strategy_dealer_hard.csv")
+            self.hard_strategy = pd.read_csv("Strategies/strategy_dealer_hard.csv")
         elif strat['Hard'] == 1:
-            self.hard_strategy = pd.read_csv('Strategies\strategy_1_hard.csv')
+            self.hard_strategy = pd.read_csv('Strategies/strategy_1_hard.csv')
         
         if strat['Soft'] == 0:
-            self.soft_strategy = pd.read_csv('Strategies\strategy_dealer_soft_stand17.csv')
-            #self.soft_strategy = pd.read_csv('Strategies\strategy_dealer_soft_hit17.csv')
+            self.soft_strategy = pd.read_csv('Strategies/strategy_dealer_soft_stand17.csv')
+            #self.soft_strategy = pd.read_csv('Strategies/strategy_dealer_soft_hit17.csv')
         elif strat['Soft'] == 1:
-            self.soft_strategy = pd.read_csv('Strategies\strategy_1_soft.csv')
+            self.soft_strategy = pd.read_csv('Strategies/strategy_1_soft.csv')
         
         if strat['Split'] == 0:
             self.split_strategy = None
         elif strat['Split'] == 1:
-            self.split_strategy = pd.read_csv('Strategies\strategy_1_split.csv')
+            self.split_strategy = pd.read_csv('Strategies/strategy_1_split.csv')
         return
     
     def calc_sum(self,cardset):
