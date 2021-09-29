@@ -40,7 +40,6 @@ for file in list_of_strats:
 #Load in all of the rules from txt files in ./Rules
 list_of_rules = glob.glob('./Rules/*.txt')   
 for file in list_of_rules:
-    st.write(file)
     header_name = file.split('/')[1].split('.txt')[0]
     with st.expander(header_name):
         with open(file,'r') as f:
