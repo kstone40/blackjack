@@ -42,7 +42,7 @@ list_of_rules = glob.glob('./Rules/*.txt')
 for file in list_of_rules:
     st.write(file)
     header_name = file.split('/')[1].split('.txt')[0]
-    with st.beta_expander(header_name):
+    with st.expander(header_name):
         with open(file,'r') as f:
             st.markdown(f.read())
         if header_name == '3 - Optimal Strategy':
@@ -88,7 +88,7 @@ options['player_count'] = st.sidebar.number_input('Number of Players',
                                                   min_value=0,max_value=10,value=1,step=1,
                                                   help='Enter the number of players/strategies to simulate together')
 options['player_strat'] = []
-player_strats = st.sidebar.beta_expander('Player Strategies')
+player_strats = st.sidebar.expander('Player Strategies')
 with player_strats:
     for p_ in range(options['player_count']):
         st.subheader(f'Player {p_+1}')
@@ -131,7 +131,7 @@ else:
 st.subheader('When you are ready, press the button below to begin the simulation.')
 st.write('')
 st.write('')
-button_cols = st.beta_columns(3)
+button_cols = st.columns(3)
 n_hands = options['hands']
 play_button = button_cols[1].button(f'Press here to simulate your Blackjack game for {n_hands} hands')
 if play_button:
@@ -139,12 +139,12 @@ if play_button:
     
 if 'my_game' in vars():
     st.subheader('Now that the simulation is complete, examine the analytics below.')
-    stats_info = st.beta_expander('Player Statistics',expanded=False)
+    stats_info = st.expander('Player Statistics',expanded=False)
     with stats_info:
         stats, edges = my_game.score()
         st.write('House Edges Calculated for Each Player/Strategy')
         st.write(edges)
-        statscols = st.beta_columns(options['player_count'])
+        statscols = st.columns(options['player_count'])
         for p_ in range(options['player_count']):
             statscols[p_].write(f'Summary Statistics for Player {p_+1}')
             statscols[p_].write(stats.loc[p_+1])
@@ -159,12 +159,12 @@ if 'my_game' in vars():
         fig_stats.update_layout(title_text='Comparison of Player Outcomes')
         st.plotly_chart(fig_stats, use_container_width=True)
         
-    val_plot = st.beta_expander('Player Value over Time',expanded=False)
+    val_plot = st.expander('Player Value over Time',expanded=False)
     with val_plot:
         fig_val = val_over_time(my_game)
         st.plotly_chart(fig_val, use_container_width=True)
         
-    prob_plot = st.beta_expander('Batch-Means Analysis')
+    prob_plot = st.expander('Batch-Means Analysis')
     with prob_plot:
         batch_hands = st.number_input('Number of Hands for Batch-Means Analysis',
                                                min_value=0,max_value=None,value=20,step=1,
