@@ -38,7 +38,7 @@ for file in list_of_strats:
 
 #Load in all of the rules from txt files in ./Rules
 list_of_rules = glob.glob('./Rules/*.txt')   
-for file in list_of_rules:
+for file in sorted(list_of_rules):
     header_name = file.split('/')[2].split('.txt')[0]
     with st.expander(header_name):
         with open(file,'r') as f:
