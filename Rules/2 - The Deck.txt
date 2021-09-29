@@ -1,0 +1,16 @@
+The source from which all cards are dealt is called the shoe.
+The shoe may contain any number of standard card decks (52 cards each).
+A cut-in card determines how many cards of the shoe are played before the discard pile is reintroduced and shuffled.
+Commonly, 4-8 decks are used in a shoe; and 3-5 decks' worth of cards are cut-in to play.
+
+The purpose of the cutting out decks form the shoe is to inhibit the ability of savvy players to "count the cards"
+and change their strategy based on a shifting distribution of remaining cards after past hands have been dealt.
+For example, a card counter who observes 6 Aces dealt from a 2-deck shoe before reshuffling would be wise to adjust their
+strategy with the knowledge that only 2 Aces remain in play. The effectiveness of such strategy is minimized as more decks are
+used in the shoe and as more deck-equivalents are cut-out from that shoe (fewer cards played before reshuffling). This policy
+protects the odds of the house, increasing the probability that any player will lose a hand.
+
+Online casinos, where reshuffling can be done instantaneously, use a virtual "continuous shuffling machine" that recombines
+and shuffles after every hand. In practice, many in-person casinos do not enact continuous shuffling because this policy
+excessively consumes the dealer's time. The benefit of a dealer serving more hands in a given time outweighs the risk that
+players might count cards, especially with the mitigation by the cut-in card.

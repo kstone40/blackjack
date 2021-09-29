@@ -1,0 +1,33 @@
+1. Simulation and game options set by user
+2. Options loaded into instance of Game class
+3. Game creates instance of Player class for each player/strategy, and one additional for the dealer
+	1. Player strategies, look-up tables as user-specified or rule-defined, are saved as class attributes
+4. Game creates instance of Shoe class, with a number of 52-card standard decks
+5. The game is played one hand at a time
+	1. If the shoe is smaller than the size allowed by the cut-in card, the shoe is recombined and shuffled
+	2. Two cards are dealt from the shoe (without replacement) to each player, one at a time, dealer last
+	3. The first dealer card is labaled the "Dealer upcard"
+	4. Each player acts on his/her hand based on the pre-determined strategy, the cards in each of their card sets, and the dealer upcard
+		1. If the player has an Ace and a numbered card in the original 2-card deal and a "soft total" strategy, choose action from _soft strategy_
+		2. If the player has a qualifying set of cards of identical value and a "split" strategy, choose action from _split strategy_
+		3. Else, calculate the hard sum of cards (as below), then choose action from _hard strategy_
+	5. The game executes required actions for Hit, Stand, Double, Surrender, or Split
+	6. When player actions are complete, each card set is evaluated for a result
+	7. The results are tabulated into a record, and value is added/removed from the players as per the rules
+	8. The cards are collected from players and dealers, held in a discard bin until the cut-in card requires recombination and reshuffling
+6. The records from all hands are evaluated and assembled into summary statistics
+
+
+	#Pseudocode for Calculating Player/Dealer Hard Sum
+	card_sum = 0
+	aces_high = 0
+	for card in cardset:
+		if card is Ace:
+			aces_high += 1
+			card_sum += 11
+		else:
+			card_sum += card.value
+	while aces_high > 0 and card_sum > 21:
+		card_sum -= 10
+		aces_high -= 1
+	return card_sum

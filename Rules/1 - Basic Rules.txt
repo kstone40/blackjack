@@ -1,0 +1,28 @@
+The object of Blackjack is to accumulate cards until the sum of card values is closer to 21 than that of the dealer,
+without exceeding 21. Numbered cards are worth their face-value; Jacks, Queens, and Kings are worth 10;
+Aces are worth 1 or 11 decided by the player.  
+
+Blackjack is played in hands -  rounds of the game where win/loss is evaluated before beginning again.
+Bets are made before each hand. A hand won returns the player's bet plus an additional value of that bet.
+A hand lost consumes the player's bet, which is gained by the house.
+In the case of a tie (push), where the dealer and player sums of cards are equal, the player's bet is simply returned.
+If the player's sum of cards is 21 from their first two cards (a natural Blackjack),
+and the dealer does not also have a natural Blackjack, the player is rewarded a multiplier on their bet (e.g. $\frac{3}{2}=1.5$, or $\frac{6}{5}=1.2$)
+
+A hand begins by dealing one card to each of the players, then the dealer, until each player has two cards.
+Only the first card of the dealer is revealed to the player (upcard), generating the element of chance.
+One at a time, each player is faced with a decision.
+A player may choose to Hit, requesting that another card be dealt in attempt to increase their sum.
+A player may Hit any number of times as desired, until the card sum of 21 is exceeded and the player loses (bust).
+A player may choose to Stand, confident that their sum will beat that of the dealer.
+A player may choose to Double-Down, doubling the value of their original bet and committing to a single Hit.
+A player may choose to Split if their hand contains cards of duplicate value. The two cards will be split into separate sets,
+and each set will be Hit for a minimum of two cards. The decision process then proceeds independently for each set.
+If a player busts (sum > 21), that player loses regardless of the dealer's future reveal.
+In some sets of rules, a player may also choose to Surrender. This allows the player to immediately recover half of their bet
+without having to risk a full loss.
+
+While each player is left with a decision, the dealer must always Hit when his/her card total <16 and Stand when $\geq$ 17
+After each player concludes their actions, the dealer reveals their second card (downcard) and Hits until their minimum total is reached.
+If the dealer busts and a player hasn't, the player wins. If neither busts, a player wins if closer to 21 and loses if not.
+After each player's set(s) of cards have been resolved, all cards are collected and returned to a discard pile.

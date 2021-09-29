@@ -1,0 +1,17 @@
+The "optimal strategy" (a.k.a. "basic strategy") is a popular publication of recommended player actions
+(to Hit, Stand, Double-down, or Split) based on their hand and the dealer upcard. It is widely accepted
+that sticking to optimal/basic strategy is the best way for a player to increase their odds of success
+(and reduce the house edge) without the aid of counting cards. 
+
+Basic strategy is often divided into three or four sections.
+
+**Hard Totals** Recommended action based on the sum of player cards.
+
+**Soft Totals** Recommended action based on the 2nd player card, if the 1st is an Ace (which can bear two values) and the 2nd is a number (non-face) card.
+
+**Splitting** When to split (or not) if the player's cards are equal in value, allowing a potential split.
+
+**Surrender (Uncommon)** When to surrender (or not) for a few cases of unfavorable odds to the player.
+
+**Using this simulation tool herein, we can examine how each piece of these strategies (and other rule adjustments to the game,
+such as disallowing double-down or surrender) might lead to changes in the expected return for a Blackjack player.**

@@ -1,0 +1,48 @@
+**Expected Value**: $E(h(X)) = \sum_{i=1}^{n} h(x_i)P(X=x_i)$
+
+_The average/expected outcome from a distribution, given the probability of all events._
+_Consider a reward function which is dependent on the player and dealer cards before settling a hand
+$R = h(c_P, c_D)$ so that the expected player reward of any dealt hand can be written as such:_
+
+**Expected Value of a Hand (to Player)**: $E(R) = \sum_{i=1}^{n} h(c_P, c_D)P(C_P = c_P, C_D = c_D)$
+
+$R = 2^{d_i} * h(c_P, c_D)$
+
+$\text{where } d_i=  
+\begin{dcases}
+	1 & \text{if Double-down} \\
+	0 & \text{else}
+\end{dcases}
+$
+
+$\text{where } h(c_P, c_D) =  
+\begin{dcases}
+	0 & \text{if Push} \\
+	1 & \text{if Won} \\
+	1 & \text{if Dealer bust} \\
+	1*\frac{3}{2} & \text{if Blackjack} \\
+	-1 & \text{if Beat} \\
+	-1 & \text{if Bust} \\
+	-0.5 & \text{if Surrender}
+\end{dcases}
+$
+
+**House Edge**: $E_H(R) = (1 - E(R))*100 \%$
+
+_The expected value of the player's hand, with respect to the house, expressed as a percentage of the player's bet.
+A house edge of 5% suggests an average return to the house of $5 per $100 bet made._
+
+**Monte Carlo Simulation** The function of output probabilities $P(X)$ is determined empirically by simulating a set of events
+based on input probabilities (e.g. random dealing from a deck) for a large number of events $x_i$. Functions of the output probability, including
+expected values, can then be trivially calculated from the set of simulation outputs.
+
+**Batch Means** The statistical analysis of point estimators evolving from a long-running simulation by breaking the simulation up into "batches"
+and examining the means (or other statistics) of each batch.
+
+**Probabilty Mass Function (PMF):** $f(x_i) = p = P(X=x_i)$
+
+_The probability for each event $x_i$ within the range of possibilities $X$_
+
+**Cumulative Distribution Function (CDF)** $F(x_i) = P(X \leq x) = \sum_{x_i \leq x} f(x_i)$
+
+_The cumulative probability for all events $x_i$ within the threshold $x$_
