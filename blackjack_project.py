@@ -239,8 +239,10 @@ class game:
 
         return stats, edges
     
-    def optimize_action(self, upcard, cardset):
-        actions = ['Hit','Stand','Double']
+    def value_actions(self, upcard, cardset):
+        actions = ['Hit','Stand','Double','Split','Surrender']
+        
+        
         return
 
     def play(self):        
@@ -463,14 +465,14 @@ def heatmap(game):
     
     return fig_hard, fig_soft
 
-random.seed('6644')
-options = {'hands':1000,
-            'player_count':1,
-            'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
-            'decks_per_shoe':6,
-            'cut_in':4,
-            'blackjack':3/2}
-my_game = game(options)
-my_game.play()
-stats, edges = my_game.score()
-batch_means, batch_vars, fig_pmf, fig_ecdf = batch_means(my_game,5)
+# random.seed('6644')
+# options = {'hands':1000,
+#             'player_count':1,
+#             'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
+#             'decks_per_shoe':6,
+#             'cut_in':4,
+#             'blackjack':3/2}
+# my_game = game(options)
+# my_game.play()
+# stats, edges = my_game.score()
+# batch_means, batch_vars, fig_pmf, fig_ecdf = batch_means(my_game,5)
