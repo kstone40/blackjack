@@ -195,5 +195,8 @@ if 'my_game' in vars():
                                                min_value=0,max_value=10000,value=200,step=100,
                                                help='Enter the number of hands to test in the optimizer')
         
-        values = my_game.value_actions(card_options[card_names.index(upcard)],[card_options[card_names.index(card1)],card_options[card_names.index(card2)]],player_ID,iterations)
+        optimize_action = st.button('Go!')
+        if optimize_action:
+            values = my_game.value_actions(card_options[card_names.index(upcard)],[card_options[card_names.index(card1)],card_options[card_names.index(card2)]],player_ID,iterations)
+        
         st.write(values)

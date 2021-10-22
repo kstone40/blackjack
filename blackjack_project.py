@@ -243,7 +243,7 @@ class game:
         #Cards will look like a list of values:
         # [['Ace',[1,11]], ['Ten', 10], etc]
         
-        actions = ['Hit','Stand','Double','Split','Surrender']
+        actions = ['Hit','Stand','Double','Split']
         card_vals = list(range(2,11))
         card_vals.append([1,11])
         possible_cards = list(zip(['Dummy']*11,card_vals))   
@@ -255,9 +255,9 @@ class game:
         
         optimizer_prog = st.progress(0)
         for action in actions:
+            multiplier = actions.index(action)
             for i_ in range(iterations):
- 
-                optimizer_prog.progress((i_++1)/iterations)               
+                optimizer_prog.progress((iterations*multiplier+i_++1)/(iterations*4))               
  
                 #Give the cards out
                 for card in cards:
@@ -339,7 +339,8 @@ class game:
                 self.shoe.shuffle()
             values[action] = values[action]/iterations
                             
-
+        
+        optimizer_prog.empty()
         return values
 
     def play(self):        
