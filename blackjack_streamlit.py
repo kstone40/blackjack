@@ -179,3 +179,14 @@ if 'my_game' in vars():
             st.plotly_chart(fig_hard, use_container_width=True)
         with heatmap_cols[1]:
             st.plotly_chart(fig_soft, use_container_width=True)
+            
+    value_comparison = st.expander('Player Action Optimizer')
+    with value_comparison:
+        card_vals = list(range(2,11))
+        card_vals.append([1,11])
+        card_names = ['2','3','4','5','6','7','8','9','10 or Face','Ace']
+        card_options = zip(card_names, card_vals)
+        
+        card1 = st.selectbox('Player Card 1', card_options)
+        
+        values = my_game.value_actions(test_upcard,test_cards,1,200)
