@@ -279,7 +279,7 @@ class game:
                     while 'None' in player.actions:
                         for cardset in range(len(player.cards)):
                             #Make a decision for each cardset
-                            if firstaction == True:
+                            if firstaction == True and player.role != 'Dealer':
                                 player.actions[cardset] = action
                                 firstaction = False
                             else:
