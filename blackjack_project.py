@@ -334,8 +334,9 @@ class game:
                         else:
                             values[action] -= 1
                     
-                            
-                self.collect()
+                for player in test_players:
+                    player.cards = [[]]
+                self.shoe = shoe(self.decks_per_shoe)
                 self.shoe.shuffle()
             values[action] = values[action]/iterations
                             
@@ -580,6 +581,6 @@ def card_heatmap(game):
 # batch_means, batch_vars, fig_pmf, fig_ecdf = batch_means(my_game,5)
 # fig_soft, fig_hard = card_heatmap(my_game)
 
-# test_cards = [['Dummy',9],['Dummy',9]]
-# test_upcard = ['Dummy',8]
-# test_values = my_game.value_actions(test_upcard,test_cards,1,200)
+# test_cards = [['Dummy',3],['Dummy',3]]
+# test_upcard = ['Dummy',5]
+# test_values = my_game.value_actions(test_upcard,test_cards,1,1000)
