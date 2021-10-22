@@ -169,5 +169,13 @@ if 'my_game' in vars():
                                                help='Enter the number of hands to batch out the simultaion')
         batch_means, batch_vars, fig_pmf, fig_ecdf  = batch_means(my_game,batch_hands)
         st.plotly_chart(fig_pmf, use_container_width=True) 
-        st.plotly_chart(fig_ecdf, use_container_width=True) 
-
+        st.plotly_chart(fig_ecdf, use_container_width=True)
+    
+    heatmap = st.expander('Card Value Heatmap')
+    with heatmap:
+        heatmap_cols = st.columns(2)
+        fig_hard, fig_soft = heatmap(my_game)
+        with heatmap_cols[0]:
+            st.plotly_chart(fig_hard, use_container_width=True)
+        with heatmap_cols[1]:
+            st.plotly_chart(fig_soft, use_container_width=True)
