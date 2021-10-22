@@ -240,10 +240,14 @@ class game:
         return stats, edges
     
     def value_actions(self, upcard, cardset):
+        #Cardset will look like a list of values:
+        # [['Ace',[1,11]], ['Ten', 10], etc]
         actions = ['Hit','Stand','Double','Split','Surrender']
         values = {}
         for action in actions:
             values[action] = 0
+        
+        
         
         return values
 
@@ -471,15 +475,15 @@ def card_heatmap(game):
     
     return fig_hard, fig_soft
 
-random.seed('6644')
-options = {'hands':10000,
-            'player_count':1,
-            'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
-            'decks_per_shoe':6,
-            'cut_in':4,
-            'blackjack':3/2}
-my_game = game(options)
-my_game.play()
-stats, edges = my_game.score()
-batch_means, batch_vars, fig_pmf, fig_ecdf = batch_means(my_game,5)
-fig_soft, fig_hard = card_heatmap(my_game)
+# random.seed('6644')
+# options = {'hands':10000,
+#             'player_count':1,
+#             'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
+#             'decks_per_shoe':6,
+#             'cut_in':4,
+#             'blackjack':3/2}
+# my_game = game(options)
+# my_game.play()
+# stats, edges = my_game.score()
+# batch_means, batch_vars, fig_pmf, fig_ecdf = batch_means(my_game,5)
+# fig_soft, fig_hard = card_heatmap(my_game)
