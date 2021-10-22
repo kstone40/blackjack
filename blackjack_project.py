@@ -241,9 +241,11 @@ class game:
     
     def value_actions(self, upcard, cardset):
         actions = ['Hit','Stand','Double','Split','Surrender']
+        values = {}
+        for action in actions:
+            values[action] = 0
         
-        
-        return
+        return values
 
     def play(self):        
         self.record_keeper = []
@@ -434,8 +436,12 @@ def card_heatmap(game):
         hards['HardTotal'] = record_p['Card1']+record_p['Card2']
         #If the player isn't splitting, double aces will show up; don't report this as 22
         if game.players[p_].strat['Split']==1:
-            hards[hards['HardTotal']==22]=12
+            hards.loc[hards['HardTotal']==22,'HardTotal']=12
         hards = hards.groupby(by=['Dealer','HardTotal']).agg({'Value':'mean','Dealer':'count'}).rename(columns={'Value':'AvgValue','Dealer':'Count'}).reset_index()
+        #Filter out any significantly under-represented values
+        #Dealer card has 11 values, 22 rolls should average 2 each
+        hards.loc[hards['Count']<22,'Count']=None
+
         
         #Aggregate data for soft-totals (one ace, one cardset at a time)
         #Even if the player can't do soft strategy, we want to see how these cards played out
@@ -465,14 +471,15 @@ def card_heatmap(game):
     
     return fig_hard, fig_soft
 
-# random.seed('6644')
-# options = {'hands':50000,
-#             'player_count':1,
-#             'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
-#             'decks_per_shoe':6,
-#             'cut_in':4,
-#             'blackjack':3/2}
-# my_game = game(options)
-# my_game.play()
-# stats, edges = my_game.score()
-# batch_means, batch_vars, fig_pmf, fig_ecdf = batch_means(my_game,5)
+random.seed('6644')
+options = {'hands':10000,
+            'player_count':1,
+            'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
+            'decks_per_shoe':6,
+            'cut_in':4,
+            'blackjack':3/2}
+my_game = game(options)
+my_game.play()
+stats, edges = my_game.score()
+batch_means, batch_vars, fig_pmf, fig_ecdf = batch_means(my_game,5)
+fig_soft, fig_hard = card_heatmap(my_game)
