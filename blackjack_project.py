@@ -252,9 +252,12 @@ class game:
         values = {}
         for action in actions:
             values[action] = 0
-            
+        
+        optimizer_prog = st.progress(0)
         for action in actions:
             for i_ in range(iterations):
+ 
+                sim_prog.progress((i++1)/iterations)               
  
                 #Give the cards out
                 for card in cards:

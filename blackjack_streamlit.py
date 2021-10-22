@@ -188,5 +188,11 @@ if 'my_game' in vars():
         card_options = zip(card_names, card_vals)
         
         card1 = st.selectbox('Player Card 1', card_options)
+        card2 = st.selectbox('Player Card 2', card_options)
+        upcard = st.selectbox('Dealer Upcard', card_options)
+        player_ID = st.selectbox('Player ID', list(range(1,1+my_game.player_count)))
+        iterations = st.number_input('Iterations',
+                                               min_value=0,max_value=10000,value=200,step=1,
+                                               help='Enter the number of hands to test in the optimizer')
         
-        values = my_game.value_actions(test_upcard,test_cards,1,200)
+        values = my_game.value_actions(upcard,[card1,card2],player_ID,iterations)
