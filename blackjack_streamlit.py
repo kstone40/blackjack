@@ -171,10 +171,10 @@ if 'my_game' in vars():
         st.plotly_chart(fig_pmf, use_container_width=True) 
         st.plotly_chart(fig_ecdf, use_container_width=True)
     
-    heatmap = st.expander('Card Value Heatmap')
-    with heatmap:
+    heatmap_plot = st.expander('Card Value Heatmap')
+    with heatmap_plot:
         heatmap_cols = st.columns(2)
-        fig_hard, fig_soft = heatmap(my_game)
+        fig_hard, fig_soft = card_heatmap(my_game)
         with heatmap_cols[0]:
             st.plotly_chart(fig_hard, use_container_width=True)
         with heatmap_cols[1]:

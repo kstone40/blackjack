@@ -411,7 +411,7 @@ def val_over_time(game):
     fig.update_layout(title_text=f'Player Value over Simulation ')
     return fig
 
-def heatmap(game):
+def card_heatmap(game):
     for p_ in range(game.player_count):
         #For each player, set up the stats with separate dealer and player card values
         all_records = game.record_keeper.set_index('Player')
@@ -466,7 +466,7 @@ def heatmap(game):
     return fig_hard, fig_soft
 
 # random.seed('6644')
-# options = {'hands':1000,
+# options = {'hands':50000,
 #             'player_count':1,
 #             'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
 #             'decks_per_shoe':6,
