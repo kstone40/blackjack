@@ -196,3 +196,4 @@ if 'my_game' in vars():
                                                help='Enter the number of hands to test in the optimizer')
         
         values = my_game.value_actions(card_options[card_names.index(upcard)],[card_options[card_names.index(card1)],card_options[card_names.index(card2)]],player_ID,iterations)
+        st.write(values)

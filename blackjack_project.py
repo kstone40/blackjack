@@ -257,7 +257,7 @@ class game:
         for action in actions:
             for i_ in range(iterations):
  
-                optimizer_prog.progress((i++1)/iterations)               
+                optimizer_prog.progress((i_++1)/iterations)               
  
                 #Give the cards out
                 for card in cards:
