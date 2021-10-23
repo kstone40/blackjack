@@ -204,10 +204,12 @@ if 'my_game' in vars():
         card_names = ['2','3','4','5','6','7','8','9','10/Face','Ace']
         card_options = list(zip(card_names, card_vals))
         
-        card1 = st.selectbox('Player Card 1', card_names)
-        card2 = st.selectbox('Player Card 2', card_names)
-        upcard = st.selectbox('Dealer Upcard', card_names)
-        player_ID = st.selectbox('Player ID', list(range(1,1+my_game.player_count)))
+        card_entry_cols = st.columns(4)
+        card1 =  card_entry_cols[0].selectbox('Player Card 1', card_names)
+        card2 = card_entry_cols[1].selectbox('Player Card 2', card_names)
+        upcard = card_entry_cols[2].selectbox('Dealer Upcard', card_names)
+        player_ID = card_entry_cols[3].selectbox('Player ID', list(range(1,1+my_game.player_count)),
+                                                 help="Select a player's strategy to use for sequential actions that follow the first, fixed action (i.e. continuous hits, or splits)")
         iterations = st.number_input('Iterations',
                                                min_value=0,max_value=10000,value=200,step=100,
                                                help='Enter the number of hands to test in the optimizer')
