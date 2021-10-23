@@ -74,7 +74,7 @@ class player:
                 self.soft_strategy = pd.read_csv('Strategies/strategy_dealer_soft_hit17.csv')
                 self.split_strategy = None
             elif strat['Special'] == 'Custom':
-                custom_strat = pd.ExcelFile(+strat['Path'])
+                custom_strat = pd.ExcelFile(strat['Path'])
                 self.hard_strategy = pd.read_excel(custom_strat, 'hard')
                 self.soft_strategy = pd.read_excel(custom_strat, 'soft')
                 self.split_strategy = pd.read_excel(custom_strat, 'split')
