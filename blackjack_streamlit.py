@@ -74,14 +74,14 @@ st.sidebar.header('Game Options')
 options['blackjack'] = st.sidebar.number_input('BlackJack Value',
                                                min_value=0.0,max_value=None,value=1.5,
                                                help='Enter the value (multiplier of bet) that a natural BlackJack should return')      
-
+options['dealerhitsoft17'] = st.sidebar.checkbox('Dealer Hits on Soft 17?', value=0,
+                                                 help ='Check if you want to simulate a dealer that hits on soft 17s')
 options['decks_per_shoe'] = st.sidebar.number_input('Decks per Shoe',
                                                min_value=0,max_value=None,value=6,step=1,
                                                help='Enter the number of decks in play')
 options['cut_in'] = st.sidebar.number_input('Decks to Cut In',
                                                min_value=0.0,max_value=float(options['decks_per_shoe']),value=options['decks_per_shoe']*(2/3), step=0.1,
                                                help='Enter the number of decks to play before reshuffling')
-
 options['player_count'] = st.sidebar.number_input('Number of Players',
                                                   min_value=0,max_value=10,value=1,step=1,
                                                   help='Enter the number of players/strategies to simulate together')
