@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 @author: Kevin Stone
+Simulation and analysis of Blackjack strategies
+for GATech ISyE6644 Fall 2021 Course Project
 """
 
 import pandas as pd
@@ -8,11 +10,11 @@ import random
 import copy
 import time
 import plotly.graph_objects as go
-#from plotly.subplots import make_subplots
 import plotly.figure_factory as ff
 import numpy as np
 import streamlit as st
 
+#For local running/troubleshooting, trigger plotting in broser
 import plotly.io as pio
 pio.renderers.default='browser'
 
@@ -51,29 +53,45 @@ class player:
         self.ID = ID
         self.role = role
         #Store player cards, will get reset after every hand
+        #Cards and their related properties must reflect that a player might have multiple hands
+        #(In the case of a split)
         self.cards = [[]]
-        self.double = 0
-        self.surrender = []
         self.cardsums = []
+        self.surrender = []
+        self.double = 0 #Double is a single flag, can only be done on first deal
         #Record bank value
         self.value = 0
+        
+
         #Load player strategies from CSV decision tables
         self.strat = strat
-        if strat['Hard'] == 0:
-            self.hard_strategy = pd.read_csv("Strategies/strategy_dealer_hard.csv")
-        elif strat['Hard'] == 1:
-            self.hard_strategy = pd.read_csv('Strategies/strategy_1_hard.csv')
-        
-        if strat['Soft'] == 0:
-            self.soft_strategy = pd.read_csv('Strategies/strategy_dealer_soft_stand17.csv')
-            #self.soft_strategy = pd.read_csv('Strategies/strategy_dealer_soft_hit17.csv')
-        elif strat['Soft'] == 1:
-            self.soft_strategy = pd.read_csv('Strategies/strategy_1_soft.csv')
-        
-        if strat['Split'] == 0:
-            self.split_strategy = None
-        elif strat['Split'] == 1:
-            self.split_strategy = pd.read_csv('Strategies/strategy_1_split.csv')
+        if 'Special' in strat.keys():
+            if strat['Special'] == 'Dealer_StandSoft17':
+                self.hard_strategy = pd.read_csv("Strategies/strategy_dealer_hard.csv")
+                self.soft_strategy = pd.read_csv('Strategies/strategy_dealer_soft_stand17.csv')
+                self.split_strategy = None
+            elif strat['Special'] == 'Dealer_HitSoft17':
+                self.hard_strategy = pd.read_csv("Strategies/strategy_dealer_hard.csv")
+                self.soft_strategy = pd.read_csv('Strategies/strategy_dealer_soft_hit17.csv')
+                self.split_strategy = None
+            elif strat['Special'] == 'Custom':
+                custom_strat = pd.ExcelFile("Strategies/"+strat['Path'])
+                self.hard_strategy = pd.read_excel(custom_strat, 'hard')
+                self.soft_strategy = pd.read_excel(custom_strat, 'soft')
+                self.split_strategy = pd.read_excel(custom_strat, 'split')
+        else:
+            if strat['Hard'] == 0:
+                self.hard_strategy = pd.read_csv("Strategies/strategy_dealer_hard.csv")       
+            elif strat['Hard'] == 1:
+                self.hard_strategy = pd.read_csv('Strategies/strategy_1_hard.csv')
+            if strat['Soft'] == 0:
+                self.soft_strategy = None
+            elif strat['Soft'] == 1:
+                self.soft_strategy = pd.read_csv('Strategies/strategy_1_soft.csv')
+            if strat['Split'] == 0:
+                self.split_strategy = None
+            elif strat['Split'] == 1:
+                self.split_strategy = pd.read_csv('Strategies/strategy_1_split.csv')
         return
     
     def calc_sum(self,cardset):
@@ -177,7 +195,10 @@ class game:
         
         for p_ in range(self.player_count):
             self.players.append(player(p_+1,'Guest',self.player_strat[p_]))
-        self.players.append(player(self.player_count+1,'Dealer',{'Hard':0,'Soft':0,'Split':0}))
+        if self.dealerhitsoft17 == 1:
+            self.players.append(player(self.player_count+1,'Dealer',{'Hard':0, 'Soft':0, 'Split': 0, 'Double':0, 'Surrender':0,'Special':'Dealer_HitSoft17'}))
+        else:
+            self.players.append(player(self.player_count+1,'Dealer',{'Hard':0, 'Soft':0, 'Split': 0, 'Double':0, 'Surrender':0,'Special':'Dealer_HitSoft17'}))
         self.shoe = shoe(self.decks_per_shoe)
         return
     
@@ -567,20 +588,3 @@ def card_heatmap(game):
     fig_soft.update_yaxes(title_text='Dealer UpCard')
     
     return fig_hard, fig_soft
-
-# random.seed('6644')
-# options = {'hands':100,
-#             'player_count':1,
-#             'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
-#             'decks_per_shoe':6,
-#             'cut_in':4,
-#             'blackjack':3/2}
-# my_game = game(options)
-# my_game.play()
-# stats, edges = my_game.score()
-# batch_means, batch_vars, fig_pmf, fig_ecdf = batch_means(my_game,5)
-# fig_soft, fig_hard = card_heatmap(my_game)
-
-# test_cards = [['Dummy',3],['Dummy',3]]
-# test_upcard = ['Dummy',5]
-# test_values = my_game.value_actions(test_upcard,test_cards,1,1000)
