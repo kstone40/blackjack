@@ -121,6 +121,8 @@ class player:
             action = 'Stand'
         else:
             player_cards = self.cards[cardset]
+            
+            #Set the play "type" to default hard, can be changed if soft/split enabled
             play = 'hard'
             
             #Test to see if the player has exactly one Ace for soft strategy
@@ -137,7 +139,6 @@ class player:
                 play = 'soft'
                 action = self.soft_strategy[(self.soft_strategy['Dealer']==upcard)&(self.soft_strategy['Card2']==other_card)]['Action'].iloc[0]
                 
-                
             elif player_cards[0][1]==player_cards[1][1] and len(self.cards)==1 and self.strat['Split']>0:
                 if type(player_cards[0][1]) is list:
                     double_card = 11
@@ -145,13 +146,13 @@ class player:
                     double_card = player_cards[0][1]
                     
                 #If we have two cards and they are the same value...
-                #Placeholder for split strategy
                 action = self.split_strategy[(self.split_strategy['Dealer']==upcard)&(self.split_strategy['Card']==double_card)]['Action'].iloc[0]
                 if action == 'No Split':
                     play = 'hard'
                 else:
                     play = 'split'
-                    
+            
+            #Only if the play type is still "hard" (not "soft" or "split" returned "no split"), go ahead and calculate the sum
             if play == 'hard':
                 card_sum = self.calc_sum(cardset)
                 if card_sum > 21:
@@ -159,7 +160,7 @@ class player:
                 else:
                     action = self.hard_strategy[(self.hard_strategy['Dealer']==upcard)&(self.hard_strategy['Player']==card_sum)]['Action'].iloc[0]
                     
-            #Only allow doubling on first 2 cards
+            #Only allow doubling after the dealing of the first 2 cards
             if action in ['DoubleH','DoubleS'] and len(self.cards[cardset])>2:
                 action = 'Hit'
             if action in ['DoubleH','DoubleS'] and len(self.cards)>1:
