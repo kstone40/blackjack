@@ -166,21 +166,19 @@ class player:
             if action in ['DoubleH','DoubleS'] and len(self.cards)>1:
                 action = 'Hit'
             
-            #Resolve Double/H
+            #Resolve Double/H if allowable
             if action == 'DoubleH':
                 if self.strat['Double'] == 1:
                     action = 'Double'
                 else:
                     action = 'Hit'
-
-            #Resolve Double/S
+            #Resolve Double/S if allowable
             if action == 'DoubleS':
                 if self.strat['Double'] == 1:
                     action = 'Double'
                 else:
                     action = 'Stand'
-            
-            #Resolve Surrender
+            #Resolve Surrender if allowable
             if action == 'Surrender':
                 if self.strat['Surrender'] == 0:
                     action = 'Hit'
@@ -189,20 +187,27 @@ class player:
 
 class game:
     def __init__(self,options):
-        self.players = []
+        #Store all of the options as class attributes
         for key in options.keys():
             setattr(self, key, options[key])
         
+        #Generate each player, with given strategy, as required
+        self.players = []
         for p_ in range(self.player_count):
             self.players.append(player(p_+1,'Guest',self.player_strat[p_]))
+            
+        #Generate a dealer, who may hit or stand on Soft 17s
         if self.dealerhitsoft17 == 1:
             self.players.append(player(self.player_count+1,'Dealer',{'Hard':0, 'Soft':0, 'Split': 0, 'Double':0, 'Surrender':0,'Special':'Dealer_HitSoft17'}))
         else:
             self.players.append(player(self.player_count+1,'Dealer',{'Hard':0, 'Soft':0, 'Split': 0, 'Double':0, 'Surrender':0,'Special':'Dealer_HitSoft17'}))
+            
+        #Generate the shoe
         self.shoe = shoe(self.decks_per_shoe)
         return
     
     def collect(self):
+        #Removes all of the cards from every player and adds them to the shoe's discard pile
         for player in self.players:
             for cardset in range(len(player.cards)):
                 for card in list(player.cards[cardset]):
@@ -212,27 +217,46 @@ class game:
         return
     
     def deal(self,deck,player,cardset):
+        #Deal a single card from the shoe to the player's cardset
         player.cards[cardset].append(deck.cards[0])
         deck.cards.remove(deck.cards[0])
         return
     
-    def exchange(self,player,result):
-        if result == 'Win':
-            player.value += 2**player.double
-        if result == 'DealerBust':
-            player.value += 2**player.double
-        if result == 'Blackjack':
-            player.value += self.blackjack
-        if result == 'Beat':
-            player.value -= 2**player.double
-        if result == 'Bust':
-            player.value -= 2**player.double
-        if result == 'Surrender':
-            player.value -= 0.5*(2**player.double)
-        #If push, no value changes            
-        return
+    def resolve(self,player,cardset,dealer_sum):
+        player_sum = player.calc_sum(cardset)
+        
+        #Player surrendered
+        if player.surrender[cardset]==1:
+            result = 'Surrender'
+            dvalue = -0.5*(2**player.double)
+        #Player gets blackjack
+        elif player_sum == 21 and len(player.cards[cardset])==2 and dealer_sum != 21:
+            result = 'Blackjack'
+            dvalue = self.blackjack
+        #Player busts, always a loss
+        elif player_sum > 21:
+            result = 'Bust'
+            dvalue = -2**player.double
+        #Dealer busts, player doesn't 
+        elif dealer_sum > 21 and player_sum <= 21:
+            result = 'DealerBust'
+            dvalue = 2**player.double
+        #No one busts
+        elif dealer_sum <= 21 and player_sum <= 21:
+            if player_sum > dealer_sum:
+                result = 'Win'
+                dvalue = 2**player.double
+            elif player_sum == dealer_sum:
+                result = 'Push'
+                dvalue = 0
+            else:
+                result = 'Beat'
+                dvalue = -2**player.double
+      
+        return dvalue, result
 
     def score(self):
+        #Assemble a table of player statistics from the game's record keeper
         stats = self.record_keeper[self.record_keeper['Role']!='Dealer']
         stats = stats.groupby(by=['Player','Result','Double']).size().reset_index(name='Count')
         stats['Frequency'] = stats['Count']/self.hands
@@ -260,19 +284,63 @@ class game:
 
         return stats, edges
     
+    def decide(self, player, dealer_card, firstaction=False, action=None):
+        #Decide what to do based on player and dealer cards (precedes player.act)
+        #If it's the first deal, or there is an active split to be handled
+        while 'None' in player.actions:
+            for cardset in range(len(player.cards)):
+                #Make a decision for each cardset
+                if firstaction == True and player.role != 'Dealer':
+                    player.actions[cardset] = action
+                    firstaction = False
+                else:
+                    player.actions[cardset] = player.act(dealer_card,cardset,1)
+                #HIT: Deal one more card
+                while player.actions[cardset] == 'Hit':
+                    self.deal(self.shoe,player,cardset)
+                    player.actions[cardset]  = player.act(dealer_card,cardset,1)
+                #DOUBLE DOWN: Hit, then stop
+                if player.actions[cardset] == 'Double':
+                    player.double = 1
+                    #This will only ever apply to the first 2 cards, no need to worry about splits
+                    self.deal(self.shoe,player,cardset)
+                    player.actions[cardset] = player.act(dealer_card,cardset,0)
+                #SURRENDER: Stop
+                if player.actions[cardset] == 'Surrender':
+                    player.surrender[cardset] = 1
+                #SPLIT: Split current cardset into two cardsets
+                if player.actions[cardset] == 'Split':
+                    #Take the second card from the current hand, add it as a new cardset
+                    player.cards.append([player.cards[cardset][1]])
+                    player.cards[cardset].remove(player.cards[cardset][1])
+                    #Splitting demands re-evaluation for each card set
+                    player.actions.append('None')
+                    player.actions[cardset] == 'None'
+                    player.surrender.append([0])
+                    self.deal(self.shoe,player,cardset)
+                    self.deal(self.shoe,player,cardset+1)
+        return
+    
     def value_actions(self, dealer_card, cards, ID, iterations):
+        #Determine the expected value for an action given the player and dealer cards through simulation 
+        actions = ['Hit','Stand','Double']
+        if cards[0][1]==cards[1][1]:
+            actions.append('Split')
+            
         #Cards will look like a list of values:
         # [['Ace',[1,11]], ['Ten', 10], etc]
-        
-        actions = ['Hit','Stand','Double','Split']
         card_vals = list(range(2,11))
         card_vals.append([1,11])
         possible_cards = list(zip(['Dummy']*11,card_vals))   
+        
+        #Use the selected player's actions for anything that follow the first, fixed action (i.e. in case of split or re-hit)
         test_players = [self.players[ID-1], self.players[-1]]
-   
+       
         values = {}
+        summary = {}
         for action in actions:
-            values[action] = 0
+            values[action] = [] #Collect a list of results, and we'll get mean and var from Numpy later
+            summary[action] = {}
         
         optimizer_prog = st.progress(0)
         for action in actions:
@@ -294,76 +362,24 @@ class game:
                     player.double = 0
                     player.surrender = [0]
                     player.actions = ['None']
-                    firstaction = True
-                    
-                    #If it's the first deal, or there is an active split to be handled
-                    while 'None' in player.actions:
-                        for cardset in range(len(player.cards)):
-                            #Make a decision for each cardset
-                            if firstaction == True and player.role != 'Dealer':
-                                player.actions[cardset] = action
-                                firstaction = False
-                            else:
-                                player.actions[cardset] = player.act(dealer_card,cardset,1)
-                            #HIT: Deal one more card
-                            while player.actions[cardset] == 'Hit':
-                                self.deal(self.shoe,player,cardset)
-                                player.actions[cardset]  = player.act(dealer_card,cardset,1)
-                            #DOUBLE DOWN: Hit, then stop
-                            if player.actions[cardset] == 'Double':
-                                player.double = 1
-                                #This will only ever apply to the first 2 cards, no need to worry about splits
-                                self.deal(self.shoe,player,cardset)
-                                player.actions[cardset] = player.act(dealer_card,cardset,0)
-                            #SURRENDER: Stop
-                            if player.actions[cardset] == 'Surrender':
-                                player.surrender[cardset] = 1
-                            #SPLIT: Split current cardset into two cardsets
-                            if player.actions[cardset] == 'Split':
-                                #Take the second card from the current hand, add it as a new cardset
-                                player.cards.append([player.cards[cardset][1]])
-                                player.cards[cardset].remove(player.cards[cardset][1])
-                                #Splitting demands re-evaluation for each card set
-                                player.actions.append('None')
-                                player.actions[cardset] == 'None'
-                                player.surrender.append([0])
-                                self.deal(self.shoe,player,cardset)
-                                self.deal(self.shoe,player,cardset+1)
+                    self.decide(player, dealer_card, firstaction = True, action = action)
                                 
                 dealer_sum = self.players[-1].calc_sum(0)      
                 player = test_players[0]
                 for cardset in range(len(player.cards)):
-                    player_sum = player.calc_sum(cardset)
-                    #Player surrendered
-                    if player.surrender[cardset]==1:
-                        values[action] -= 0.5
-                    #Player gets blackjack
-                    elif player_sum == 21 and len(player.cards[cardset])==2 and dealer_sum != 21:
-                        values[action] += 1.5
-                    #Player busts, always a loss
-                    elif player_sum > 21:
-                        values[action] -= 1
-                    #Dealer busts, player doesn't 
-                    elif dealer_sum > 21 and player_sum <= 21:
-                        values[action] += 1
-                    #No one busts
-                    elif dealer_sum <= 21 and player_sum <= 21:
-                        if player_sum > dealer_sum:
-                            values[action] += 1
-                        elif player_sum == dealer_sum:
-                            values[action] += 0
-                        else:
-                            values[action] -= 1
+                    dvalue, result = self.resolve(player,cardset,dealer_sum)
+                    values[action].append(dvalue)
                     
                 for player in test_players:
                     player.cards = [[]]
                 self.shoe = shoe(self.decks_per_shoe)
                 self.shoe.shuffle()
-            values[action] = values[action]/iterations
-                            
-        
+            summary[action]['Mean'] = np.mean(np.array(values[action]))
+            summary[action]['Variance'] = np.var(np.array(values[action]))
+            
+        summary = pd.DataFrame(summary)
         optimizer_prog.empty()
-        return values
+        return summary
 
     def play(self):        
         self.record_keeper = []
@@ -389,69 +405,18 @@ class game:
             
             #STEP 4: Each player, dealer last, decides what to do with their hand
             for player in self.players:
-                #If it's the first deal, or there is an active split to be handled
-                while 'None' in player.actions:
-                    for cardset in range(len(player.cards)):
-                        #Make a decision for each cardset
-                        player.actions[cardset] = player.act(dealer_card,cardset,1)
-                        #HIT: Deal one more card
-                        while player.actions[cardset] == 'Hit':
-                            self.deal(self.shoe,player,cardset)
-                            player.actions[cardset]  = player.act(dealer_card,cardset,1)
-                        #DOUBLE DOWN: Hit, then stop
-                        if player.actions[cardset] == 'Double':
-                            player.double = 1
-                            #This will only ever apply to the first 2 cards, no need to worry about splits
-                            self.deal(self.shoe,player,cardset)
-                            player.actions[cardset] = player.act(dealer_card,cardset,0)
-                        #SURRENDER: Stop
-                        if player.actions[cardset] == 'Surrender':
-                            player.surrender[cardset] = 1
-                        #SPLIT: Split current cardset into two cardsets
-                        if player.actions[cardset] == 'Split':
-                            #Take the second card from the current hand, add it as a new cardset
-                            player.cards.append([player.cards[cardset][1]])
-                            player.cards[cardset].remove(player.cards[cardset][1])
-                            #Splitting demands re-evaluation for each card set
-                            player.actions.append('None')
-                            player.actions[cardset] == 'None'
-                            player.surrender.append([0])
-                            self.deal(self.shoe,player,cardset)
-                            self.deal(self.shoe,player,cardset+1)
+                self.decide(player, dealer_card)
             
             #STEP 5: Determine whether each player won or lost and how
             dealer_sum = self.players[-1].calc_sum(0)
             for player in self.players:
                 for cardset in range(len(player.cards)):
-                    player_sum = player.calc_sum(cardset)
-                    #Player surrendered
-                    if player.surrender[cardset]==1:
-                        result = 'Surrender'
-                    #Player gets blackjack
-                    elif player_sum == 21 and len(player.cards[cardset])==2 and dealer_sum != 21:
-                        result = 'Blackjack'
-                    #Player busts, always a loss
-                    elif player_sum > 21:
-                        result = 'Bust'
-                    #Dealer busts, player doesn't 
-                    elif dealer_sum > 21 and player_sum <= 21:
-                        result = 'DealerBust'
-                    #No one busts
-                    elif dealer_sum <= 21 and player_sum <= 21:
-                        if player_sum > dealer_sum:
-                            result = 'Win'
-                        elif player_sum == dealer_sum:
-                            result = 'Push'
-                        else:
-                            result = 'Beat'
-
-                    self.exchange(player,result)
-                    
+                    dvalue, result = self.resolve(player,cardset,dealer_sum)
+                    player.value += dvalue
                     record = {'Hand':hand,'Cardset':cardset, 'Player':player.ID, 'Role':player.role, 'Value':player.value,
                               'PlayerCards':copy.deepcopy(player.cards), 'DealerUpcard':dealer_card}
                     record['Result'] = result
                     record['Double'] = (player.double==1)
-                    
                     #Add the record of this hand/player to the record keeper
                     self.record_keeper.append(record)
                     
@@ -464,6 +429,8 @@ class game:
         return
 
 def batch_means(game,batch_size):
+    #Assembles a figure for the probability mass function (PMF) of bet outcomes
+    #and a corresponding cumulative distribution function (CDF)
     records = game.record_keeper
     batch_means = []
     batch_vars = []
@@ -532,6 +499,7 @@ def val_over_time(game):
     return fig
 
 def card_heatmap(game):
+    #Creates a heatmap of realized card values for each player in the game
     for p_ in range(game.player_count):
         #For each player, set up the stats with separate dealer and player card values
         all_records = game.record_keeper.set_index('Player')
