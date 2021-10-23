@@ -92,22 +92,24 @@ with player_strats:
         st.subheader(f'Player {p_+1}')
         custom_strat = player_strats.checkbox('Custom?', value=0, key=str(p_)+'strat_custom',
                                           help ='Check if you want to upload a custom strategy')
-        
         options['player_strat'].append({})
         if custom_strat:
             #Show example file
             data = open('Strategies/strategy_custom_example.xlsx', 'rb').read()
             b64 = base64.b64encode(data).decode('UTF-8')
-            href = f'<a href="data:file/output_obj;base64,{b64}" download="Example_Strategy.xlsx" target="_blank"> "Download Example Custom Strategy" </a>'
+            href = f'<a href="data:file/output_obj;base64,{b64}" download="Example_Strategy.xlsx" target="_blank"> Download Example Custom Strategy </a>'
             st.markdown(href, unsafe_allow_html=True)
             uploaded_file = player_strats.file_uploader('Choose a file', key=str(p_))
             if uploaded_file is not None:
-                options['player_strat'][p_]['Special':'Custom']
+                options['player_strat'][p_]['Special'] = 'Custom'
                 options['player_strat'][p_]['Path':uploaded_file.name]
             
                 options['player_strat'][p_]['Hard'] = 1
                 options['player_strat'][p_]['Soft'] = 1
                 options['player_strat'][p_]['Split'] = 1
+            if uploaded_file is None:
+                options['player_strat'][p_]['Special'] = 'Custom'
+                options['player_strat'][p_]['Path':'Strategies/strategy_custom_example.xlsx']
         else:        
             choices = ['None/Dealer','Optimal']
             hard_strat = player_strats.selectbox('Hard-Total Strategy',choices,index=1,help='Select a strategy to test',key=str(p_)+'strat_hard')

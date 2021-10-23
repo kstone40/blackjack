@@ -111,7 +111,7 @@ class player:
         return card_sum
     
     def act(self,upcard,cardset,react):
-
+        #Decide what to do based on cards and the dealer card
         if type(upcard[1]) is list:
             upcard = max(upcard[1])
         else:
