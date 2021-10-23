@@ -58,8 +58,6 @@ for file in sorted(list_of_rules):
             split_unmelted = strats['split'].pivot(index='Card', columns='Dealer').replace(replacements)
             st.write(split_unmelted)
 
-
-
 st.write('')
 st.subheader('Next, populate the sidebar (left) with options that you choose to evaluate in a simulation study.')
 
@@ -90,19 +88,31 @@ player_strats = st.sidebar.expander('Player Strategies')
 with player_strats:
     for p_ in range(options['player_count']):
         st.subheader(f'Player {p_+1}')
+        custom_strat = st.sidebar.checkbox('Custom?', value=0, key=str(p_)+'strat_custom',
+                                          help ='Check if you want to upload a custom strategy')
+        
         options['player_strat'].append({})
-        choices = ['None/Dealer','Optimal']
-
-        hard_strat = player_strats.selectbox('Hard-Total Strategy',choices,index=1,help='Select a strategy to test',key=str(p_)+'strat_hard')
-        soft_strat = player_strats.selectbox('Soft-Total (Ace) Strategy',choices,index=1,help='Select a strategy to test',key=str(p_)+'strat_soft')
-        split_strat = player_strats.selectbox('Split Strategy',choices,index=1,help='Select a strategy to test',key=str(p_)+'strat_split')               
+        if custom_strat:
+            uploaded_file = st.file_uploader('Choose a file', key=str(p_))
+            if uploaded_file is not None:
+                options['player_strat'][p_]['Special':'Custom']
+                options['player_strat'][p_]['Path':uploaded_file.name]
+            
+                options['player_strat'][p_]['Hard'] = 1
+                options['player_strat'][p_]['Soft'] = 1
+                options['player_strat'][p_]['Split'] = 1
+        else:        
+            choices = ['None/Dealer','Optimal']
+            hard_strat = player_strats.selectbox('Hard-Total Strategy',choices,index=1,help='Select a strategy to test',key=str(p_)+'strat_hard')
+            soft_strat = player_strats.selectbox('Soft-Total (Ace) Strategy',choices,index=1,help='Select a strategy to test',key=str(p_)+'strat_soft')
+            split_strat = player_strats.selectbox('Split Strategy',choices,index=1,help='Select a strategy to test',key=str(p_)+'strat_split')               
+            #Boolean algebra for 0 = None, 1 = Default
+            options['player_strat'][p_]['Hard'] = 0**(hard_strat=='None/Dealer')
+            options['player_strat'][p_]['Soft'] = 0**(soft_strat=='None/Dealer')
+            options['player_strat'][p_]['Split'] = 0**(split_strat=='None/Dealer')
+        
         double_strat = player_strats.selectbox('Double-down Allowed?',[True,False],index=0,help='Select a strategy to test',key=str(p_)+'strat_double')               
         surr_strat = player_strats.selectbox('Surrender Allowed?',[True,False],index=1,help='Select a strategy to test',key=str(p_)+'strat_surr')               
-    
-        #Boolean algebra for 0 = None, 1 = Default, 2 = Custom
-        options['player_strat'][p_]['Hard'] = 0**(hard_strat=='None/Dealer')+0**(hard_strat!='Custom')
-        options['player_strat'][p_]['Soft'] = 0**(soft_strat=='None/Dealer')+0**(soft_strat!='Custom')
-        options['player_strat'][p_]['Split'] = 0**(split_strat=='None/Dealer')+0**(split_strat!='Custom')
         options['player_strat'][p_]['Double'] = 0**(not double_strat)
         options['player_strat'][p_]['Surrender'] = 0**(not surr_strat)
         
