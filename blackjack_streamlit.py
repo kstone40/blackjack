@@ -217,12 +217,14 @@ if 'my_game' in vars():
         
         optimize_action = st.button('Go!')
         if optimize_action:
-            summary, values = my_game.value_actions(card_options[card_names.index(upcard)],[card_options[card_names.index(card1)],card_options[card_names.index(card2)]],player_ID,iterations)
+            summary, values, results = my_game.value_actions(card_options[card_names.index(upcard)],[card_options[card_names.index(card1)],card_options[card_names.index(card2)]],player_ID,iterations)
             st.write(summary)
+            
             fig_actions = go.Figure()
-            fig_stats.add_trace(go.Bar(x=player_stats['Result'],y=player_stats['Frequency'],name=f'Name',text = 'Text'))
-            fig_stats.update_xaxes(title_text='Result')
-            fig_stats.update_yaxes(title_text='Frequency')
-            fig_stats.update_layout(title_text='Comparison of Player Outcomes')
-            st.plotly_chart(fig_stats, use_container_width=True)
+            for action in results['First Action'].unique():
+                fig_actions.add_trace(go.Bar(x=results['Outcome'],y=player_stats['Count'],name=f'Name',text = 'Text'))
+            fig_actions.update_xaxes(title_text='Result')
+            fig_actions.update_yaxes(title_text='Count')
+            fig_actions.update_layout(title_text='Comparison of Action Outcomes')
+            st.plotly_chart(fig_actions, use_container_width=True)
             

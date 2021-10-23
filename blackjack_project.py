@@ -379,7 +379,12 @@ class game:
                 
             summary[action]['Mean'] = np.mean(np.array(values[action]))
             summary[action]['Variance'] = np.var(np.array(values[action]))
-            
+            results[action] = pd.Series(results[action]).groupby(pd.Series(results[action])).size() #Convert list of actions to a value-grouped Pd Series
+        
+        results = pd.DataFrame(results).reset_index()
+        results = pd.melt(results, id_vars = 'index', value_vars=["Hit","Stand","Double","Split"])
+        results = results.rename(columns={"index": "Outcome", "variable": "First Action", "value":"Count"})
+        
         summary = pd.DataFrame(summary)
         optimizer_prog.empty()
         return summary, values, results
