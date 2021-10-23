@@ -85,9 +85,6 @@ options['player_count'] = st.sidebar.number_input('Number of Players',
                                                   help='Enter the number of players/strategies to simulate together')
 options['player_strat'] = []
 
-#Need a function to link to file downloads, to show example custom strategy
-def download_(name,label):
-
 player_strats = st.sidebar.expander('Player Strategies')
 with player_strats:
     for p_ in range(options['player_count']):
