@@ -176,6 +176,7 @@ if 'my_game' in vars():
         st.plotly_chart(fig_stats, use_container_width=True)
         
         for p_ in range(options['player_count']):
+            st.write('Realized Card Values for Player {p_+1}')
             fig_hard, fig_soft = card_heatmap(my_game, p_+1)
             heatmap_cols = st.columns(2)
             with heatmap_cols[0]:
@@ -216,5 +217,12 @@ if 'my_game' in vars():
         
         optimize_action = st.button('Go!')
         if optimize_action:
-            values = my_game.value_actions(card_options[card_names.index(upcard)],[card_options[card_names.index(card1)],card_options[card_names.index(card2)]],player_ID,iterations)
-            st.write(values)
+            summary, values = my_game.value_actions(card_options[card_names.index(upcard)],[card_options[card_names.index(card1)],card_options[card_names.index(card2)]],player_ID,iterations)
+            st.write(summary)
+            fig_actions = go.Figure()
+            fig_stats.add_trace(go.Bar(x=player_stats['Result'],y=player_stats['Frequency'],name=f'Name',text = 'Text'))
+            fig_stats.update_xaxes(title_text='Result')
+            fig_stats.update_yaxes(title_text='Frequency')
+            fig_stats.update_layout(title_text='Comparison of Player Outcomes')
+            st.plotly_chart(fig_stats, use_container_width=True)
+            

@@ -121,10 +121,8 @@ class player:
             action = 'Stand'
         else:
             player_cards = self.cards[cardset]
-            
             #Set the play "type" to default hard, can be changed if soft/split enabled
             play = 'hard'
-            
             #Test to see if the player has exactly one Ace for soft strategy
             have_one_ace = (type(player_cards[0][1]) is list) is not (type(player_cards[1][1]) is list)
             if have_one_ace:
@@ -139,7 +137,7 @@ class player:
                 play = 'soft'
                 action = self.soft_strategy[(self.soft_strategy['Dealer']==upcard)&(self.soft_strategy['Card2']==other_card)]['Action'].iloc[0]
                 
-            elif player_cards[0][1]==player_cards[1][1] and len(self.cards)==1 and self.strat['Split']>0:
+            elif player_cards[0][1]==player_cards[1][1] and len(player_cards)==2 and self.strat['Split']>0:
                 if type(player_cards[0][1]) is list:
                     double_card = 11
                 else:
@@ -310,15 +308,17 @@ class game:
                     player.surrender[cardset] = 1
                 #SPLIT: Split current cardset into two cardsets
                 if player.actions[cardset] == 'Split':
-                    #Take the second card from the current hand, add it as a new cardset
+                    #Take the second card from the current cardset, add it as a new cardset
                     player.cards.append([player.cards[cardset][1]])
                     player.cards[cardset].remove(player.cards[cardset][1])
                     #Splitting demands re-evaluation for each card set
                     player.actions.append('None')
                     player.actions[cardset] == 'None'
                     player.surrender.append([0])
+                    max_cardset = len(player.cards)-1
                     self.deal(self.shoe,player,cardset)
-                    self.deal(self.shoe,player,cardset+1)
+                    self.deal(self.shoe,player,max_cardset)
+
         return
     
     def value_actions(self, dealer_card, cards, ID, iterations):
@@ -337,10 +337,12 @@ class game:
         test_players = [self.players[ID-1], self.players[-1]]
        
         values = {}
+        results = {}
         summary = {}
         for action in actions:
             values[action] = [] #Collect a list of results, and we'll get mean and var from Numpy later
             summary[action] = {}
+            results[action] = []
         
         optimizer_prog = st.progress(0)
         for action in actions:
@@ -351,11 +353,11 @@ class game:
                 #Give the cards out
                 for card in cards:
                     test_players[0].cards[0].append(card) 
+                
                 self.players[-1].cards[0].append(dealer_card)
                 self.deal(self.shoe,self.players[-1],0)
                 
                 player_sum = test_players[0].calc_sum(0)
-                #Next, nead to decide what the dealer will do
                 
                 for player in test_players:
                     #Reset the flag for double down and reset the player decision
@@ -363,23 +365,24 @@ class game:
                     player.surrender = [0]
                     player.actions = ['None']
                     self.decide(player, dealer_card, firstaction = True, action = action)
-                                
-                dealer_sum = self.players[-1].calc_sum(0)      
-                player = test_players[0]
-                for cardset in range(len(player.cards)):
-                    dvalue, result = self.resolve(player,cardset,dealer_sum)
+
+                dealer_sum = self.players[-1].calc_sum(0) 
+                for cardset in range(len(test_players[0].cards)):
+                    dvalue, result = self.resolve(test_players[0],cardset,dealer_sum)
                     values[action].append(dvalue)
+                    results[action].append(result)
                     
                 for player in test_players:
                     player.cards = [[]]
                 self.shoe = shoe(self.decks_per_shoe)
                 self.shoe.shuffle()
+                
             summary[action]['Mean'] = np.mean(np.array(values[action]))
             summary[action]['Variance'] = np.var(np.array(values[action]))
             
         summary = pd.DataFrame(summary)
         optimizer_prog.empty()
-        return summary
+        return summary, values, results
 
     def play(self):        
         self.record_keeper = []
