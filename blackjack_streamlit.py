@@ -177,7 +177,7 @@ if 'my_game' in vars():
         
         for p_ in range(options['player_count']):
             fig_hard, fig_soft = card_heatmap(my_game, p_+1)
-            heatmap_plot = st.expander('Card Value Heatmap', key=str(p_)+'_card_heatmap')
+            heatmap_cols = st.columns(2)
             with heatmap_cols[0]:
                 st.plotly_chart(fig_hard, use_container_width=True)
             with heatmap_cols[1]:
