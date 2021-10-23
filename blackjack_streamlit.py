@@ -84,16 +84,25 @@ options['player_count'] = st.sidebar.number_input('Number of Players',
                                                   min_value=0,max_value=10,value=1,step=1,
                                                   help='Enter the number of players/strategies to simulate together')
 options['player_strat'] = []
+
+#Need a function to link to file downloads, to show example custom strategy
+def download_(name,label):
+
 player_strats = st.sidebar.expander('Player Strategies')
 with player_strats:
     for p_ in range(options['player_count']):
         st.subheader(f'Player {p_+1}')
-        custom_strat = st.sidebar.checkbox('Custom?', value=0, key=str(p_)+'strat_custom',
+        custom_strat = player_strats.checkbox('Custom?', value=0, key=str(p_)+'strat_custom',
                                           help ='Check if you want to upload a custom strategy')
         
         options['player_strat'].append({})
         if custom_strat:
-            uploaded_file = st.file_uploader('Choose a file', key=str(p_))
+            #Show example file
+            data = open('Strategies/strategy_custom_example.xlsx', 'rb').read()
+            b64 = base64.b64encode(data).decode('UTF-8')
+            href = f'<a href="data:file/output_obj;base64,{b64}" download="Example_Strategy.xlsx" target="_blank"> "Download Example Custom Strategy" </a>'
+            st.markdown(href, unsafe_allow_html=True)
+            uploaded_file = player_strats.file_uploader('Choose a file', key=str(p_))
             if uploaded_file is not None:
                 options['player_strat'][p_]['Special':'Custom']
                 options['player_strat'][p_]['Path':uploaded_file.name]
