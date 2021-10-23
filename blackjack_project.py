@@ -498,43 +498,41 @@ def val_over_time(game):
     fig.update_layout(title_text=f'Player Value over Simulation ')
     return fig
 
-def card_heatmap(game):
-    #Creates a heatmap of realized card values for each player in the game
-    for p_ in range(game.player_count):
-        #For each player, set up the stats with separate dealer and player card values
-        all_records = game.record_keeper.set_index('Player')
-        record_p = all_records.loc[p_+1]
-        record_p['Cards_in_Set'] = record_p.apply(lambda x: list(x['PlayerCards'])[x['Cardset']], axis=1)
-        record_p['Card1'] = record_p.apply(lambda x: x['Cards_in_Set'][0][1], axis=1)
-        record_p['Card2'] = record_p.apply(lambda x: x['Cards_in_Set'][1][1], axis=1)
-        record_p['Dealer'] = record_p['DealerUpcard'].apply(lambda x: x[1])
-        record_p = record_p[['Result','Double','Dealer','Card1','Card2']].reset_index(drop=True)
+def card_heatmap(game, player_ID):
+    #Creates a heatmap of realized card values for a particular player in the game
+    all_records = game.record_keeper.set_index('Player')
+    record_p = all_records.loc[player_ID]
+    record_p['Cards_in_Set'] = record_p.apply(lambda x: list(x['PlayerCards'])[x['Cardset']], axis=1)
+    record_p['Card1'] = record_p.apply(lambda x: x['Cards_in_Set'][0][1], axis=1)
+    record_p['Card2'] = record_p.apply(lambda x: x['Cards_in_Set'][1][1], axis=1)
+    record_p['Dealer'] = record_p['DealerUpcard'].apply(lambda x: x[1])
+    record_p = record_p[['Result','Double','Dealer','Card1','Card2']].reset_index(drop=True)
 
-        #Assign value for each hand, IGNORING DOUBLES
-        win_rules = {'DealerBust':1,'Win':1,'Bust':-1,'Beat':-1,'Surrender':-0.5,'Blackjack':game.blackjack,'Push':0}
-        record_p['Value'] = record_p.apply(lambda x: win_rules[x['Result']],axis=1)
-        #Convert aces to a single 11 value
-        for cardtype in ['Card1','Card2','Dealer']:
-            record_p[cardtype] = [max(x) if type(x) is list else x for x in record_p[cardtype]]
-        
-        #Aggregate data for hard-totals (no aces, one cardset at a time)
-        hards = record_p[-((record_p['Card1']==11)^(record_p['Card2']==11))]
-        hards['HardTotal'] = record_p['Card1']+record_p['Card2']
-        #If the player isn't splitting, double aces will show up; don't report this as 22
-        if game.players[p_].strat['Split']==1:
-            hards.loc[hards['HardTotal']==22,'HardTotal']=12
-        hards = hards.groupby(by=['Dealer','HardTotal']).agg({'Value':'mean','Dealer':'count'}).rename(columns={'Value':'AvgValue','Dealer':'Count'}).reset_index()
-        #Filter out any significantly under-represented values
-        #Dealer card has 11 values, 22 rolls should average 2 each
-        hards.loc[hards['Count']<22,'Count']=None
+    #Assign value for each hand, IGNORING DOUBLES
+    win_rules = {'DealerBust':1,'Win':1,'Bust':-1,'Beat':-1,'Surrender':-0.5,'Blackjack':game.blackjack,'Push':0}
+    record_p['Value'] = record_p.apply(lambda x: win_rules[x['Result']],axis=1)
+    #Convert aces to a single 11 value
+    for cardtype in ['Card1','Card2','Dealer']:
+        record_p[cardtype] = [max(x) if type(x) is list else x for x in record_p[cardtype]]
+    
+    #Aggregate data for hard-totals (no aces, one cardset at a time)
+    hards = record_p[-((record_p['Card1']==11)^(record_p['Card2']==11))]
+    hards['HardTotal'] = record_p['Card1']+record_p['Card2']
+    #If the player isn't splitting, double aces will show up; don't report this as 22
+    if game.players[player_ID-1].strat['Split']==1:
+        hards.loc[hards['HardTotal']==22,'HardTotal']=12
+    hards = hards.groupby(by=['Dealer','HardTotal']).agg({'Value':'mean','Dealer':'count'}).rename(columns={'Value':'AvgValue','Dealer':'Count'}).reset_index()
+    #Filter out any significantly under-represented values
+    #Dealer card has 11 values, 22 rolls should average 2 each
+    hards.loc[hards['Count']<22,'Count']=None
 
-        
-        #Aggregate data for soft-totals (one ace, one cardset at a time)
-        #Even if the player can't do soft strategy, we want to see how these cards played out
-        softs = record_p[(record_p['Card1']==11)^(record_p['Card2']==11)]
-        softs['NonAce'] = softs[['Card1','Card2']].min(axis=1)
-        softs = softs.groupby(by=['Dealer','NonAce']).agg({'Value':'mean','Dealer':'count'}).rename(columns={'Value':'AvgValue','Dealer':'Count'}).reset_index()
-        
+    
+    #Aggregate data for soft-totals (one ace, one cardset at a time)
+    #Even if the player can't do soft strategy, we want to see how these cards played out
+    softs = record_p[(record_p['Card1']==11)^(record_p['Card2']==11)]
+    softs['NonAce'] = softs[['Card1','Card2']].min(axis=1)
+    softs = softs.groupby(by=['Dealer','NonAce']).agg({'Value':'mean','Dealer':'count'}).rename(columns={'Value':'AvgValue','Dealer':'Count'}).reset_index()
+    
     #Plot hard total performance
     fig_hard = go.Figure(data = go.Heatmap(z = hards['AvgValue'],
                                       x = hards['HardTotal'],

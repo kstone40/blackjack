@@ -175,6 +175,14 @@ if 'my_game' in vars():
         fig_stats.update_layout(title_text='Comparison of Player Outcomes')
         st.plotly_chart(fig_stats, use_container_width=True)
         
+        for p_ in range(options['player_count']):
+            fig_hard, fig_soft = card_heatmap(my_game, p_+1)
+            heatmap_plot = st.expander('Card Value Heatmap', key=str(p_)+'_card_heatmap')
+            with heatmap_cols[0]:
+                st.plotly_chart(fig_hard, use_container_width=True)
+            with heatmap_cols[1]:
+                st.plotly_chart(fig_soft, use_container_width=True)
+        
     val_plot = st.expander('Player Value over Time',expanded=False)
     with val_plot:
         fig_val = val_over_time(my_game)
@@ -188,16 +196,7 @@ if 'my_game' in vars():
         batch_means, batch_vars, fig_pmf, fig_ecdf  = batch_means(my_game,batch_hands)
         st.plotly_chart(fig_pmf, use_container_width=True) 
         st.plotly_chart(fig_ecdf, use_container_width=True)
-    
-    heatmap_plot = st.expander('Card Value Heatmap')
-    with heatmap_plot:
-        heatmap_cols = st.columns(2)
-        fig_hard, fig_soft = card_heatmap(my_game)
-        with heatmap_cols[0]:
-            st.plotly_chart(fig_hard, use_container_width=True)
-        with heatmap_cols[1]:
-            st.plotly_chart(fig_soft, use_container_width=True)
-            
+           
     value_comparison = st.expander('Player Action Optimizer')
     with value_comparison:
         card_vals = list(range(2,11))
