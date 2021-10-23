@@ -222,9 +222,9 @@ if 'my_game' in vars():
             
             fig_actions = go.Figure()
             for action in results['First Action'].unique():
-                fig_actions.add_trace(go.Bar(x=results['Outcome'],y=player_stats['Count'],name=f'Name',text = 'Text'))
+                fig_actions.add_trace(go.Bar(x=results.query(f"`First Action` == {action}")['Outcome'],y=player_stats['Frequency'],text = player_stats['Outcome']))
             fig_actions.update_xaxes(title_text='Result')
-            fig_actions.update_yaxes(title_text='Count')
+            fig_actions.update_yaxes(title_text='Frequency')
             fig_actions.update_layout(title_text='Comparison of Action Outcomes')
             st.plotly_chart(fig_actions, use_container_width=True)
             
