@@ -198,7 +198,7 @@ if 'my_game' in vars():
         st.plotly_chart(fig_pmf, use_container_width=True) 
         st.plotly_chart(fig_ecdf, use_container_width=True)
            
-    value_comparison = st.expander('Player Action Optimizer')
+    value_comparison = st.expander('Player Action Analyzer')
     with value_comparison:
         card_vals = list(range(2,11))
         card_vals.append([1,11])
@@ -214,7 +214,6 @@ if 'my_game' in vars():
         iterations = st.number_input('Iterations',
                                                min_value=0,max_value=10000,value=200,step=100,
                                                help='Enter the number of hands to test in the optimizer')
-        
         optimize_action = st.button('Go!')
         if optimize_action:
             summary, values, results = my_game.value_actions(card_options[card_names.index(upcard)],[card_options[card_names.index(card1)],card_options[card_names.index(card2)]],player_ID,iterations)

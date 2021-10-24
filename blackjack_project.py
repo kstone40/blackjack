@@ -333,6 +333,8 @@ class game:
         card_vals.append([1,11])
         possible_cards = list(zip(['Dummy']*11,card_vals))   
         
+           
+        
         #Use the selected player's actions for anything that follow the first, fixed action (i.e. in case of split or re-hit)
         test_players = [self.players[ID-1], self.players[-1]]
        
@@ -350,7 +352,15 @@ class game:
             for i_ in range(iterations):
                 optimizer_prog.progress((iterations*multiplier+i_++1)/(iterations*4))               
  
-                #Give the cards out
+                #Remove the chosen cards from the shoe
+                card_values_remove = [cards[0][1], cards[1][1], dealer_card[1]]
+                for card_value in card_values_remove:
+                    i=0
+                    while self.shoe.cards[i][1] != card_value:
+                        i+=1
+                    self.shoe.cards.remove(self.shoe.cards[i])
+ 
+                #Give the chosen cards out
                 for card in cards:
                     test_players[0].cards[0].append(card) 
                 
@@ -384,7 +394,7 @@ class game:
             results[action] = results[action].groupby(results[action]).size()/results[action].size #Convert list of actions to a value-grouped Pd Series
         
         results = pd.DataFrame(results).reset_index()
-        results = pd.melt(results, id_vars = 'index', value_vars=["Hit","Stand","Double","Split"])
+        results = pd.melt(results, id_vars = 'index', value_vars=actions)
         results = results.rename(columns={"index": "Outcome", "variable": "First Action", "value":"Frequency"})
         
         summary = pd.DataFrame(summary)
