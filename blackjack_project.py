@@ -334,7 +334,6 @@ class game:
         possible_cards = list(zip(['Dummy']*11,card_vals))   
         
            
-        
         #Use the selected player's actions for anything that follow the first, fixed action (i.e. in case of split or re-hit)
         test_players = [self.players[ID-1], self.players[-1]]
        
