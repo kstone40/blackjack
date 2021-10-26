@@ -9,26 +9,26 @@
 9,11,Split
 10,11,Split
 11,11,Split
-2,10,No Split
-3,10,No Split
-4,10,No Split
-5,10,No Split
-6,10,No Split
-7,10,No Split
-8,10,No Split
-9,10,No Split
-10,10,No Split
-11,10,No Split
+2,10,Stand
+3,10,Stand
+4,10,Stand
+5,10,Stand
+6,10,Stand
+7,10,Stand
+8,10,Stand
+9,10,Stand
+10,10,Stand
+11,10,Stand
 2,9,Split
 3,9,Split
 4,9,Split
 5,9,Split
 6,9,Split
-7,9,No Split
+7,9,Stand
 8,9,Split
 9,9,Split
-10,9,No Split
-11,9,No Split
+10,9,Stand
+11,9,Stand
 2,8,Split
 3,8,Split
 4,8,Split
@@ -38,27 +38,27 @@
 8,8,Split
 9,8,Split
 10,8,Split
-11,8,Split
+11,8,SurrenderSplit
 2,7,Split
 3,7,Split
 4,7,Split
 5,7,Split
 6,7,Split
 7,7,Split
-8,7,No Split
-9,7,No Split
-10,7,No Split
-11,7,No Split
-2,6,No Split
+8,7,Hit
+9,7,Hit
+10,7,Hit
+11,7,Hit
+2,6,Split
 3,6,Split
 4,6,Split
 5,6,Split
 6,6,Split
-7,6,No Split
-8,6,No Split
-9,6,No Split
-10,6,No Split
-11,6,No Split
+7,6,Hit
+8,6,Hit
+9,6,Hit
+10,6,Hit
+11,6,Hit
 2,5,No Split
 3,5,No Split
 4,5,No Split
@@ -69,33 +69,33 @@
 9,5,No Split
 10,5,No Split
 11,5,No Split
-2,4,No Split
-3,4,No Split
-4,4,No Split
-5,4,No Split
-6,4,No Split
-7,4,No Split
-8,4,No Split
-9,4,No Split
-10,4,No Split
-11,4,No Split
-2,3,No Split
-3,3,No Split
+2,4,Hit
+3,4,Hit
+4,4,Hit
+5,4,Split
+6,4,Split
+7,4,Hit
+8,4,Hit
+9,4,Hit
+10,4,Hit
+11,4,Hit
+2,3,Split
+3,3,Split
 4,3,Split
 5,3,Split
 6,3,Split
 7,3,Split
-8,3,No Split
-9,3,No Split
-10,3,No Split
-11,3,No Split
-2,2,No Split
-3,2,No Split
+8,3,Hit
+9,3,Hit
+10,3,Hit
+11,3,Hit
+2,2,Split
+3,2,Split
 4,2,Split
 5,2,Split
 6,2,Split
 7,2,Split
-8,2,No Split
-9,2,No Split
-10,2,No Split
-11,2,No Split
+8,2,Hit
+9,2,Hit
+10,2,Hit
+11,2,Hit

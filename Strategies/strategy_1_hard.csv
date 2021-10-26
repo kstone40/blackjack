@@ -117,8 +117,8 @@
 7,15,Hit
 8,15,Hit
 9,15,Hit
-10,15,Surrender
-11,15,Hit
+10,15,SurrenderH
+11,15,SurrenderH
 2,16,Stand
 3,16,Stand
 4,16,Stand
@@ -126,9 +126,9 @@
 6,16,Stand
 7,16,Hit
 8,16,Hit
-9,16,Surrender
-10,16,Surrender
-11,16,Surrender
+9,16,SurrenderH
+10,16,SurrenderH
+11,16,SurrenderH
 2,17,Stand
 3,17,Stand
 4,17,Stand
@@ -138,7 +138,7 @@
 8,17,Stand
 9,17,Stand
 10,17,Stand
-11,17,Stand
+11,17,SurrenderS
 2,18,Stand
 3,18,Stand
 4,18,Stand

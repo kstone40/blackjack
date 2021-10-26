@@ -73,7 +73,7 @@ st.sidebar.header('Game Options')
 options['blackjack'] = st.sidebar.number_input('BlackJack Value',
                                                min_value=0.0,max_value=None,value=1.5,
                                                help='Enter the value (multiplier of bet) that a natural BlackJack should return')      
-options['dealerhitsoft17'] = st.sidebar.checkbox('Dealer Hits on Soft 17?', value=0,
+options['dealerhitsoft17'] = st.sidebar.checkbox('Dealer Hits on Soft 17?', value=1,
                                                  help ='Check if you want to simulate a dealer that hits on soft 17s')
 options['decks_per_shoe'] = st.sidebar.number_input('Decks per Shoe',
                                                min_value=0,max_value=None,value=6,step=1,

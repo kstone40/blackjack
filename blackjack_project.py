@@ -143,7 +143,7 @@ class player:
                 play = 'soft'
                 action = self.soft_strategy[(self.soft_strategy['Dealer']==upcard)&(self.soft_strategy['Card2']==other_card)]['Action'].iloc[0]
                 
-            elif player_cards[0][1]==player_cards[1][1] and len(player_cards)==2 and self.strat['Split']>0:
+            elif player_cards[0][1]==player_cards[1][1] and len(player_cards)==2 and self.strat['Split']>0 and self.split_strategy is not None:
                 if type(player_cards[0][1]) is list:
                     double_card = 11
                 else:
@@ -151,10 +151,12 @@ class player:
                     
                 #If we have two cards and they are the same value...
                 action = self.split_strategy[(self.split_strategy['Dealer']==upcard)&(self.split_strategy['Card']==double_card)]['Action'].iloc[0]
-                if action == 'No Split':
+                if action == 'Split':
+                    play = 'split'
+                elif action == 'No Split':
                     play = 'hard'
                 else:
-                    play = 'split'
+                    play = 'altsplit'
             
             #Only if the play type is still "hard" (not "soft" or "split" returned "no split"), go ahead and calculate the sum
             if play == 'hard':
@@ -170,6 +172,8 @@ class player:
                     action = 'Hit'
                 else:
                     action = 'Stand'
+            
+            #Allow doubling after split
             # if action in ['DoubleH','DoubleS'] and len(self.cards)>1:
             #     if action == 'DoubleH':
             #         action = 'Hit'
@@ -189,9 +193,24 @@ class player:
                 else:
                     action = 'Stand'
             #Resolve Surrender if allowable
-            if action == 'Surrender':
+            if action == 'SurrenderH':
                 if self.strat['Surrender'] == 0:
                     action = 'Hit'
+                else:
+                    action = 'Surrender'
+            if action == 'SurrenderS':
+                if self.strat['Surrender'] == 0:
+                    action = 'Stand'
+                else:
+                    action = 'Surrender'
+            if action == 'SurrenderSplit':
+                if self.strat['Surrender'] == 0:
+                    if self.strat['Split'] > 0:
+                        action = 'Split'
+                    else:
+                        action = 'Hit'
+                else:
+                    action = 'Surrender'
 
         return action
 
@@ -344,6 +363,11 @@ class game:
         #Use the selected player's actions for anything that follow the first, fixed action (i.e. in case of split or re-hit)
         test_players = [self.players[ID-1], self.players[-1]]
        
+        #Use dealer strategy after first action
+        test_players[0].hard_strategy = test_players[1].hard_strategy
+        test_players[0].soft_strategy = test_players[1].soft_strategy
+        test_players[0].split_strategy = test_players[1].split_strategy
+       
         values = {}
         results = {}
         summary = {}
@@ -358,6 +382,9 @@ class game:
             for i_ in range(iterations):
                 optimizer_prog.progress((iterations*multiplier+i_++1)/(iterations*4))               
  
+                
+                #NOTE: ISSUE MAY HAVE BEEN THAT YOU WERE REMOVING THE FIRST INSTANCE OF THE MATCHING CARD
+                
                 # #Remove the chosen cards from the shoe
                 # card_values_remove = [cards[0][1], cards[1][1], dealer_card[1]]
                 # for card_value in card_values_remove:
