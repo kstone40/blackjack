@@ -126,11 +126,11 @@ class player:
             #Test to see if the player has exactly one Ace for soft strategy
             have_one_ace = (type(player_cards[0][1]) is list) is not (type(player_cards[1][1]) is list)
             if have_one_ace:
-                #If we do, what's the other card
-                if type(player_cards[0][1]) is list:
-                    other_card = player_cards[1][1]
-                else:
-                    other_card = player_cards[0][1]
+                #If we do, what's the SUM of the other cards
+                other_card = 0
+                for card in range(len(player_cards)):
+                    if type(player_cards[card][1]) is not list:
+                        other_card += player_cards[card][1]
 
             #Enact soft strategy if one card is an ace, and the other is 9 or less, given the strategy allows
             if have_one_ace and other_card < 10 and len(player_cards)==2 and self.strat['Soft']>0:
