@@ -257,7 +257,9 @@ class game:
         #Assemble a table of player statistics from the game's record keeper
         stats = self.record_keeper[self.record_keeper['Role']!='Dealer']
         stats = stats.groupby(by=['Player','Result','Double']).size().reset_index(name='Count')
-        stats['Frequency'] = stats['Count']/self.hands
+        stats['Frequency'] = 0
+        for p_ in range(1,self.player_count+1):
+            stats.loc[stats['Player']==p_,'Frequency'] = stats.query(f'Player=={p_}').loc[:,'Count']/stats.query(f'Player=={p_}').loc[:,'Count'].sum()
         
         #Calculate house edges per player
         edges = []
@@ -326,14 +328,7 @@ class game:
         actions = ['Hit','Stand','Double']
         if cards[0][1]==cards[1][1]:
             actions.append('Split')
-            
-        #Cards will look like a list of values:
-        # [['Ace',[1,11]], ['Ten', 10], etc]
-        card_vals = list(range(2,11))
-        card_vals.append([1,11])
-        possible_cards = list(zip(['Dummy']*11,card_vals))   
-        
-           
+                      
         #Use the selected player's actions for anything that follow the first, fixed action (i.e. in case of split or re-hit)
         test_players = [self.players[ID-1], self.players[-1]]
        
@@ -358,13 +353,18 @@ class game:
                     while self.shoe.cards[i][1] != card_value:
                         i+=1
                     self.shoe.cards.remove(self.shoe.cards[i])
- 
+
                 #Give the chosen cards out
                 for card in cards:
                     test_players[0].cards[0].append(card) 
                 
                 self.players[-1].cards[0].append(dealer_card)
                 self.deal(self.shoe,self.players[-1],0)
+                
+                # print(test_players[1].cards)
+                # print(self.players[-1].cards)
+                # print(test_players[0].cards)
+                # print(self.players[ID-1].cards)
                 
                 player_sum = test_players[0].calc_sum(0)
                 
@@ -375,7 +375,7 @@ class game:
                     player.actions = ['None']
                     self.decide(player, dealer_card, firstaction = True, action = action)
 
-                dealer_sum = self.players[-1].calc_sum(0) 
+                dealer_sum = test_players[1].calc_sum(0) 
                 for cardset in range(len(test_players[0].cards)):
                     dvalue, result = self.resolve(test_players[0],cardset,dealer_sum)
                     values[action].append(dvalue)
@@ -389,8 +389,7 @@ class game:
             summary[action]['Mean'] = np.mean(np.array(values[action]))
             summary[action]['Variance'] = np.var(np.array(values[action]))
             results[action] = pd.Series(results[action])
-            results[action] = results[action]
-            results[action] = results[action].groupby(results[action]).size()/results[action].size #Convert list of actions to a value-grouped Pd Series
+            results[action] = results[action].groupby(results[action]).size()/len(results[action]) #Convert list of actions to a value-grouped Pd Series
         
         results = pd.DataFrame(results).reset_index()
         results = pd.melt(results, id_vars = 'index', value_vars=actions)
