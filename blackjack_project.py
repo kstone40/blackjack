@@ -123,17 +123,23 @@ class player:
             player_cards = self.cards[cardset]
             #Set the play "type" to default hard, can be changed if soft/split enabled
             play = 'hard'
-            #Test to see if the player has exactly one Ace for soft strategy
-            have_one_ace = (type(player_cards[0][1]) is list) is not (type(player_cards[1][1]) is list)
+            #Test to see if the player has at least one Ace for soft strategy
+            ace_count = 0
+            for card in range(len(player_cards)):
+                if player_cards[card][1] is list:
+                    ace_count += 1
+            if ace_count>0:
+                have_one_ace = True
+            else:
+                have_one_ace = False
             if have_one_ace:
                 #If we do, what's the SUM of the other cards
                 other_card = 0
                 for card in range(len(player_cards)):
-                    if type(player_cards[card][1]) is not list:
-                        other_card += player_cards[card][1]
+                    other_card += np.min(player_cards[card][1])
 
             #Enact soft strategy if one card is an ace, and the other is 9 or less, given the strategy allows
-            if have_one_ace and other_card < 10 and len(player_cards)==2 and self.strat['Soft']>0:
+            if have_one_ace and other_card < 10 and self.strat['Soft']>0:
                 play = 'soft'
                 action = self.soft_strategy[(self.soft_strategy['Dealer']==upcard)&(self.soft_strategy['Card2']==other_card)]['Action'].iloc[0]
                 
@@ -158,11 +164,17 @@ class player:
                 else:
                     action = self.hard_strategy[(self.hard_strategy['Dealer']==upcard)&(self.hard_strategy['Player']==card_sum)]['Action'].iloc[0]
                     
-            #Only allow doubling after the dealing of the first 2 cards
+            #Only allow doubling after the dealing of the first 2 cards (any cardset)
             if action in ['DoubleH','DoubleS'] and len(self.cards[cardset])>2:
-                action = 'Hit'
-            if action in ['DoubleH','DoubleS'] and len(self.cards)>1:
-                action = 'Hit'
+                if action == 'DoubleH':
+                    action = 'Hit'
+                else:
+                    action = 'Stand'
+            # if action in ['DoubleH','DoubleS'] and len(self.cards)>1:
+            #     if action == 'DoubleH':
+            #         action = 'Hit'
+            #     else:
+            #         action = 'Stand'
             
             #Resolve Double/H if allowable
             if action == 'DoubleH':
@@ -196,9 +208,9 @@ class game:
             
         #Generate a dealer, who may hit or stand on Soft 17s
         if self.dealerhitsoft17 == 1:
-            self.players.append(player(self.player_count+1,'Dealer',{'Hard':0, 'Soft':0, 'Split': 0, 'Double':0, 'Surrender':0,'Special':'Dealer_HitSoft17'}))
+            self.players.append(player(self.player_count+1,'Dealer',{'Hard':1, 'Soft':1, 'Split': 0, 'Double':0, 'Surrender':0,'Special':'Dealer_HitSoft17'}))
         else:
-            self.players.append(player(self.player_count+1,'Dealer',{'Hard':0, 'Soft':0, 'Split': 0, 'Double':0, 'Surrender':0,'Special':'Dealer_HitSoft17'}))
+            self.players.append(player(self.player_count+1,'Dealer',{'Hard':1, 'Soft':1, 'Split': 0, 'Double':0, 'Surrender':0,'Special':'Dealer_StandSoft17'}))
             
         #Generate the shoe
         self.shoe = shoe(self.decks_per_shoe)
@@ -346,13 +358,13 @@ class game:
             for i_ in range(iterations):
                 optimizer_prog.progress((iterations*multiplier+i_++1)/(iterations*4))               
  
-                #Remove the chosen cards from the shoe
-                card_values_remove = [cards[0][1], cards[1][1], dealer_card[1]]
-                for card_value in card_values_remove:
-                    i=0
-                    while self.shoe.cards[i][1] != card_value:
-                        i+=1
-                    self.shoe.cards.remove(self.shoe.cards[i])
+                # #Remove the chosen cards from the shoe
+                # card_values_remove = [cards[0][1], cards[1][1], dealer_card[1]]
+                # for card_value in card_values_remove:
+                #     i=0
+                #     while self.shoe.cards[i][1] != card_value:
+                #         i+=1
+                #     self.shoe.cards.remove(self.shoe.cards[i])
 
                 #Give the chosen cards out
                 for card in cards:
