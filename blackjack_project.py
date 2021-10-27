@@ -93,7 +93,7 @@ class player:
                 self.soft_strategy = pd.read_excel(optimal_strat, 'soft').set_index('Player')
             if strat['Split'] == 0:
                 self.split_strategy = None
-            elif strat['Split'] == 1:
+            else:
                 self.split_strategy = pd.read_excel(optimal_strat, 'split').set_index('Player')
         return
     
@@ -134,19 +134,19 @@ class player:
             
             #First count the aces in the cards
             ace_count = 0
-            have_one_ace = False
+            have_ace = False
             for card in range(len(player_cards)):
                 if player_cards[card][1] is list:
                     ace_count += 1
             if ace_count>0:
-                have_one_ace = True
+                have_ace = True
             
             #If we have at least one ace, calc the sum of the other cards
-            if have_one_ace:
+            if have_ace:
                 #If we do, what's the SUM of the other cards
                 other_card = 0
                 for card in range(len(player_cards)):
-                    other_card += np.min(player_cards[card][1])
+                    other_card += np.min(player_cards[card][1]) #Use the ace low values
             
             #Start by checking for a potential split
             if player_cards[0][1]==player_cards[1][1] and len(player_cards)==2 and self.split_strategy is not None:
@@ -159,7 +159,7 @@ class player:
                 action = self.split_strategy.loc[double_card,f'Dealer{upcard}']
 
             #If we don't qualify for a split, check for a soft hand
-            elif have_one_ace and other_card < 10:
+            elif have_ace and other_card < 10:
                 action = self.soft_strategy.loc[other_card,f'Dealer{upcard}']
                       
             #If we don't quality for a split or soft, do the hard total
@@ -170,21 +170,21 @@ class player:
                 else:
                     action = self.hard_strategy.loc[card_sum,f'Dealer{upcard}']
                     
-            #Only allow doubling after the dealing of the first 2 cards (any cardset)
-            if action in ['DoubleH','DoubleS'] and len(self.cards[cardset])>2:
+            #Disable doubling anytime after first two cards
+            if action in ['DoubleH','DoubleS'] and len(player_cards)>2:
                 if action == 'DoubleH':
                     action = 'Hit'
                 else:
                     action = 'Stand'
             
-            #Allow doubling after split
+            # #Disable doubling after split
             # if action in ['DoubleH','DoubleS'] and len(self.cards)>1:
             #     if action == 'DoubleH':
             #         action = 'Hit'
             #     else:
             #         action = 'Stand'
             
-            #Resolve Doubles if if dis-allowed
+            #Resolve doubles if if dis-allowed
             if action == 'DoubleH':
                 if self.strat['Double'] == 1:
                     action = 'Double'
@@ -198,23 +198,23 @@ class player:
                     
             #Resolve Surrender if dis-alowed
             if action == 'SurrenderH':
-                if self.strat['Surrender'] == 0:
+                if self.strat['Surrender'] == 1:
+                    action = 'Surrender'
+                else:
                     action = 'Hit'
-                else:
-                    action = 'Surrender'
             if action == 'SurrenderS':
-                if self.strat['Surrender'] == 0:
-                    action = 'Stand'
-                else:
+                if self.strat['Surrender'] == 1:
                     action = 'Surrender'
+                else:
+                    action = 'Stand'
             if action == 'SurrenderSplit':
-                if self.strat['Surrender'] == 0:
+                if self.strat['Surrender'] == 1:
+                    action = 'Surrender'
+                else:
                     if self.split_strategy is not None:
                         action = 'Split'
                     else:
                         action = 'Hit'
-                else:
-                    action = 'Surrender'
             
             #Resolve conditional splits
             if action == 'SplitH':
