@@ -65,8 +65,11 @@ def record_actions(first_cards, second_card_ranges, strategy):
                 alt_action_value = summary[alt_action]['Mean']
                 record['Alt Action Value'] = alt_action_value
                 best_action = summary.idxmax(axis = 1)['Mean']
-                record['Best Action'] = best_action
                 best_action_value = summary[best_action]['Mean']
+                if best_action_value < -0.5:
+                    best_action = 'Surrender'
+                    best_action_value = -0.5
+                record['Best Action'] = best_action
                 record['Best Action Value'] = best_action_value
                 record['Differential Value'] = best_action_value - alt_action_value
                 records.append(record)

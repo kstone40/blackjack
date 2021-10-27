@@ -578,7 +578,7 @@ def card_heatmap(game, player_ID):
     hards = record_p[-((record_p['Card1']==11)^(record_p['Card2']==11))]
     hards['HardTotal'] = record_p['Card1']+record_p['Card2']
     #If the player isn't splitting, double aces will show up; don't report this as 22
-    if game.players[player_ID-1].strat['Split']==1:
+    if game.players[player_ID-1].split_strategy is not None:
         hards.loc[hards['HardTotal']==22,'HardTotal']=12
     hards = hards.groupby(by=['Dealer','HardTotal']).agg({'Value':'mean','Dealer':'count'}).rename(columns={'Value':'AvgValue','Dealer':'Count'}).reset_index()
     #Filter out any significantly under-represented values
