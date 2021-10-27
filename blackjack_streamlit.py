@@ -61,9 +61,9 @@ else:
     char = 'S'
 
 optimal_strat = optimal_strat = pd.ExcelFile(f'Strategies/strategy_optimal_{char}17.xlsx')
-hard_strat = pd.read_excel(custom_strat, 'hard').set_index('Player')
-soft_strat = pd.read_excel(custom_strat, 'soft').set_index('Player')
-split_strat = pd.read_excel(custom_strat, 'split').set_index('Player')
+hard_strat = pd.read_excel(optimal_strat, 'hard').set_index('Player')
+soft_strat = pd.read_excel(optimal_strat, 'soft').set_index('Player')
+split_strat = pd.read_excel(optimal_strat, 'split').set_index('Player')
 
 #Load in all of the rules from txt files in ./Rules
 list_of_rules = glob.glob('./Rules/*.txt')   
