@@ -30,37 +30,6 @@ st.write('v1.0, Sep 2021, Kevin Stone')
 
 st.subheader('First, consider reviewing the fundamentals below.')
 
-#Load in all of the optimal strategies from csv files in ./Strategies
-list_of_strats = glob.glob('./Strategies/strategy_1*.csv')  
-strats = {}
-for file in list_of_strats:
-    header_name = file.split('_1_')[1].split('.')[0]
-    strats[header_name]=pd.read_csv(file)
-
-#Load in all of the rules from txt files in ./Rules
-list_of_rules = glob.glob('./Rules/*.txt')   
-for file in sorted(list_of_rules):
-    header_name = file.split('/')[2].split('.txt')[0]
-    with st.expander(header_name):
-        with open(file,'r') as f:
-            st.markdown(f.read())
-        if header_name == '3 - Optimal Strategy':
-            replacements = {'DoubleH':'Double, else Hit', 'DoubleS':'Double, else Stand','Surrender':'Surrender, else Hit'}
-            
-            st.subheader('Hard Total Strategy')
-            hard_unmelted = strats['hard'].pivot(index='Player', columns='Dealer').replace(replacements)
-            st.write(hard_unmelted)
-        
-            st.subheader('Soft Total Strategy')
-            soft_unmelted = strats['soft'].pivot(index='Card2', columns='Dealer').replace(replacements)
-            st.write(soft_unmelted)
-        
-            st.subheader('Split Strategy')
-            split_unmelted = strats['split'].pivot(index='Card', columns='Dealer').replace(replacements)
-            st.write(split_unmelted)
-
-st.write('')
-st.subheader('Next, populate the sidebar (left) with options that you choose to evaluate in a simulation study.')
 
 options = {}
 st.sidebar.header('Simulation Options')    
@@ -84,6 +53,38 @@ options['cut_in'] = st.sidebar.number_input('Decks to Cut In',
 options['player_count'] = st.sidebar.number_input('Number of Players',
                                                   min_value=0,max_value=10,value=1,step=1,
                                                   help='Enter the number of players/strategies to simulate together')
+
+#Load in the appropriate optimal strategy
+if options['dealerhitsoft17'] == 1:
+    char = 'H'
+else:
+    char = 'S'
+
+optimal_strat = optimal_strat = pd.ExcelFile(f'Strategies/strategy_optimal_{char}17.xlsx')
+hard_strat = pd.read_excel(custom_strat, 'hard').set_index('Player')
+soft_strat = pd.read_excel(custom_strat, 'soft').set_index('Player')
+split_strat = pd.read_excel(custom_strat, 'split').set_index('Player')
+
+#Load in all of the rules from txt files in ./Rules
+list_of_rules = glob.glob('./Rules/*.txt')   
+for file in sorted(list_of_rules):
+    header_name = file.split('/')[2].split('.txt')[0]
+    with st.expander(header_name):
+        with open(file,'r') as f:
+            st.markdown(f.read())
+        if header_name == '3 - Optimal Strategy':
+            st.subheader(f'Optimal Strategy for {char}17 Game')
+            st.subheader('Hard Total Strategy')
+            st.write(hard_strat)
+            st.subheader('Soft Total Strategy')
+            st.write(soft_strat)
+            st.subheader('Split Strategy')
+            st.write(split_strat)
+
+st.write('')
+st.subheader('Next, populate the sidebar (left) with options that you choose to evaluate in a simulation study.')
+
+
 options['player_strat'] = []
 
 player_strats = st.sidebar.expander('Player Strategies')
