@@ -48,7 +48,7 @@ class shoe:
         return
           
 class player:
-    def __init__(self,ID,role,strat):
+    def __init__(self,ID,role,strat,dealerhitsoft17):
         #Store basic player information
         self.ID = ID
         self.role = role
@@ -62,35 +62,39 @@ class player:
         #Record bank value
         self.value = 0
         
+        #Load in dealer and optimal strategies for the two major variations
+        if dealerhitsoft17 == 1:
+            char = 'H'
+        else:
+            char = 'S'
+        dealer_strat = pd.ExcelFile(f'Strategies/strategy_dealer_{char}17.xlsx')
+        optimal_strat = pd.ExcelFile(f'Strategies/strategy_optimal_{char}17.xlsx')
+        
         #Load player strategies from CSV decision tables
         self.strat = strat
         if 'Special' in strat.keys():
-            if strat['Special'] == 'Dealer_StandSoft17':
-                self.hard_strategy = pd.read_csv("Strategies/strategy_dealer_hard.csv")
-                self.soft_strategy = pd.read_csv('Strategies/strategy_dealer_soft_stand17.csv')
-                self.split_strategy = None
-            elif strat['Special'] == 'Dealer_HitSoft17':
-                self.hard_strategy = pd.read_csv("Strategies/strategy_dealer_hard.csv")
-                self.soft_strategy = pd.read_csv('Strategies/strategy_dealer_soft_hit17.csv')
+            if strat['Special'] == 'Dealer':
+                self.hard_strategy = pd.read_excel(dealer_strat, 'hard').set_index('Player')
+                self.soft_strategy = pd.read_excel(dealer_strat, 'soft').set_index('Player')
                 self.split_strategy = None
             elif strat['Special'] == 'Custom':
                 custom_strat = pd.ExcelFile(strat['Path'])
-                self.hard_strategy = pd.read_excel(custom_strat, 'hard')
-                self.soft_strategy = pd.read_excel(custom_strat, 'soft')
-                self.split_strategy = pd.read_excel(custom_strat, 'split')
+                self.hard_strategy = pd.read_excel(custom_strat, 'hard').set_index('Player')
+                self.soft_strategy = pd.read_excel(custom_strat, 'soft').set_index('Player')
+                self.split_strategy = pd.read_excel(custom_strat, 'split').set_index('Player')
         else:
             if strat['Hard'] == 0:
-                self.hard_strategy = pd.read_csv("Strategies/strategy_dealer_hard.csv")       
-            elif strat['Hard'] == 1:
-                self.hard_strategy = pd.read_csv('Strategies/strategy_1_hard.csv')
+                self.hard_strategy = pd.read_excel(dealer_strat, 'hard').set_index('Player')     
+            else:
+                self.hard_strategy = pd.read_excel(optimal_strat, 'hard').set_index('Player')  
             if strat['Soft'] == 0:
-                self.soft_strategy = None
-            elif strat['Soft'] == 1:
-                self.soft_strategy = pd.read_csv('Strategies/strategy_1_soft.csv')
+                self.soft_strategy = pd.read_excel(dealer_strat, 'soft').set_index('Player')
+            else:
+                self.soft_strategy = pd.read_excel(optimal_strat, 'soft').set_index('Player')
             if strat['Split'] == 0:
                 self.split_strategy = None
             elif strat['Split'] == 1:
-                self.split_strategy = pd.read_csv('Strategies/strategy_1_split.csv')
+                self.split_strategy = pd.read_excel(optimal_strat, 'split').set_index('Player')
         return
     
     def calc_sum(self,cardset):
@@ -111,60 +115,60 @@ class player:
         return card_sum
     
     def act(self,upcard,cardset,react):
+        
         #Decide what to do based on cards and the dealer card
+        #Convert Ace to singular 11 value
         if type(upcard[1]) is list:
             upcard = max(upcard[1])
         else:
             upcard = upcard[1]
+        
+        #Default action is stand
+        action = 'Stand'
+        
         #React determines whether or not the player can continue to hit
         if not react:
             action = 'Stand'
         else:
             player_cards = self.cards[cardset]
-            #Set the play "type" to default hard, can be changed if soft/split enabled
-            play = 'hard'
-            #Test to see if the player has at least one Ace for soft strategy
+            
+            #First count the aces in the cards
             ace_count = 0
+            have_one_ace = False
             for card in range(len(player_cards)):
                 if player_cards[card][1] is list:
                     ace_count += 1
             if ace_count>0:
                 have_one_ace = True
-            else:
-                have_one_ace = False
+            
+            #If we have at least one ace, calc the sum of the other cards
             if have_one_ace:
                 #If we do, what's the SUM of the other cards
                 other_card = 0
                 for card in range(len(player_cards)):
                     other_card += np.min(player_cards[card][1])
-
-            #Enact soft strategy if one card is an ace, and the other is 9 or less, given the strategy allows
-            if have_one_ace and other_card < 10 and self.strat['Soft']>0:
-                play = 'soft'
-                action = self.soft_strategy[(self.soft_strategy['Dealer']==upcard)&(self.soft_strategy['Card2']==other_card)]['Action'].iloc[0]
-                
-            elif player_cards[0][1]==player_cards[1][1] and len(player_cards)==2 and self.strat['Split']>0 and self.split_strategy is not None:
+            
+            #Start by checking for a potential split
+            if player_cards[0][1]==player_cards[1][1] and len(player_cards)==2 and self.split_strategy is not None:
                 if type(player_cards[0][1]) is list:
                     double_card = 11
                 else:
                     double_card = player_cards[0][1]
                     
                 #If we have two cards and they are the same value...
-                action = self.split_strategy[(self.split_strategy['Dealer']==upcard)&(self.split_strategy['Card']==double_card)]['Action'].iloc[0]
-                if action == 'Split':
-                    play = 'split'
-                elif action == 'No Split':
-                    play = 'hard'
-                else:
-                    play = 'altsplit'
-            
-            #Only if the play type is still "hard" (not "soft" or "split" returned "no split"), go ahead and calculate the sum
-            if play == 'hard':
+                action = self.split_strategy.loc[double_card,f'Dealer{upcard}']
+
+            #If we don't qualify for a split, check for a soft hand
+            elif have_one_ace and other_card < 10:
+                action = self.soft_strategy.loc[other_card,f'Dealer{upcard}']
+                      
+            #If we don't quality for a split or soft, do the hard total
+            else:
                 card_sum = self.calc_sum(cardset)
-                if card_sum > 21:
+                if card_sum >= 21:
                     action = 'Stand'
                 else:
-                    action = self.hard_strategy[(self.hard_strategy['Dealer']==upcard)&(self.hard_strategy['Player']==card_sum)]['Action'].iloc[0]
+                    action = self.hard_strategy.loc[card_sum,f'Dealer{upcard}']
                     
             #Only allow doubling after the dealing of the first 2 cards (any cardset)
             if action in ['DoubleH','DoubleS'] and len(self.cards[cardset])>2:
@@ -180,19 +184,19 @@ class player:
             #     else:
             #         action = 'Stand'
             
-            #Resolve Double/H if allowable
+            #Resolve Doubles if if dis-allowed
             if action == 'DoubleH':
                 if self.strat['Double'] == 1:
                     action = 'Double'
                 else:
                     action = 'Hit'
-            #Resolve Double/S if allowable
             if action == 'DoubleS':
                 if self.strat['Double'] == 1:
                     action = 'Double'
                 else:
                     action = 'Stand'
-            #Resolve Surrender if allowable
+                    
+            #Resolve Surrender if dis-alowed
             if action == 'SurrenderH':
                 if self.strat['Surrender'] == 0:
                     action = 'Hit'
@@ -205,12 +209,19 @@ class player:
                     action = 'Surrender'
             if action == 'SurrenderSplit':
                 if self.strat['Surrender'] == 0:
-                    if self.strat['Split'] > 0:
+                    if self.split_strategy is not None:
                         action = 'Split'
                     else:
                         action = 'Hit'
                 else:
                     action = 'Surrender'
+            
+            #Resolve conditional splits
+            if action == 'SplitH':
+                if self.split_strategy is not None:
+                    action = 'Split'
+                else:
+                    action = 'Hit'
 
         return action
 
@@ -223,13 +234,9 @@ class game:
         #Generate each player, with given strategy, as required
         self.players = []
         for p_ in range(self.player_count):
-            self.players.append(player(p_+1,'Guest',self.player_strat[p_]))
+            self.players.append(player(p_+1,'Guest',self.player_strat[p_],self.dealerhitsoft17))
             
-        #Generate a dealer, who may hit or stand on Soft 17s
-        if self.dealerhitsoft17 == 1:
-            self.players.append(player(self.player_count+1,'Dealer',{'Hard':1, 'Soft':1, 'Split': 0, 'Double':0, 'Surrender':0,'Special':'Dealer_HitSoft17'}))
-        else:
-            self.players.append(player(self.player_count+1,'Dealer',{'Hard':1, 'Soft':1, 'Split': 0, 'Double':0, 'Surrender':0,'Special':'Dealer_StandSoft17'}))
+        self.players.append(player(self.player_count+1,'Dealer',{'Special':'Dealer'},self.dealerhitsoft17))
             
         #Generate the shoe
         self.shoe = shoe(self.decks_per_shoe)
@@ -399,11 +406,6 @@ class game:
                 
                 self.players[-1].cards[0].append(dealer_card)
                 self.deal(self.shoe,self.players[-1],0)
-                
-                # print(test_players[1].cards)
-                # print(self.players[-1].cards)
-                # print(test_players[0].cards)
-                # print(self.players[ID-1].cards)
                 
                 player_sum = test_players[0].calc_sum(0)
                 

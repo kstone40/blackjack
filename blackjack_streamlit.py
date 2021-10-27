@@ -106,9 +106,6 @@ with player_strats:
             if uploaded_file is None:
                 options['player_strat'][p_]['Special'] = 'Custom'
                 options['player_strat'][p_]['Path'] = 'Strategies/strategy_custom_example.xlsx'
-            options['player_strat'][p_]['Hard'] = 1
-            options['player_strat'][p_]['Soft'] = 1
-            options['player_strat'][p_]['Split'] = 1
         else:        
             choices = ['None/Dealer','Optimal']
             hard_strat = player_strats.selectbox('Hard-Total Strategy',choices,index=1,help='Select a strategy to test',key=str(p_)+'strat_hard')
