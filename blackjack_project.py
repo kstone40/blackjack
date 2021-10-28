@@ -308,14 +308,14 @@ class game:
                 player_stats = stats[stats['Player']==player.ID]
                 for index,row in player_stats.iterrows():
                     if row['Result'] in ['DealerBust','Win']:
-                        value += row['Frequency']*(2**row['Double'])
+                        value += row['Count']*(2**row['Double'])
                     elif row['Result'] in ['Bust','Beat']:
-                        value -= row['Frequency']*(2**row['Double'])
+                        value -= row['Count']*(2**row['Double'])
                     elif row['Result'] == 'Surrender':
-                        value -= 0.5*row['Frequency']*(2**row['Double'])
+                        value -= 0.5*row['Count']*(2**row['Double'])
                     elif row['Result'] == 'Blackjack':
-                        value += row['Frequency']*self.blackjack
-                edge['House Edge (%)'] = -value*100
+                        value += row['Count']*self.blackjack
+                edge['House Edge (%)'] = -(value/self.hands)*100
                 edges.append(edge)
         edges = pd.DataFrame(edges).set_index('Player')
         stats = stats.set_index('Player')

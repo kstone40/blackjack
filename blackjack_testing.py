@@ -11,7 +11,7 @@ from blackjack_project import *
 import plotly
 
 random.seed('6644')
-options = {'hands':10000,
+options = {'hands':2,
             'player_count':7,
             'player_strat':[{'Special':'Custom','Path':'Strategies\strategy_optimal_K0.xlsx'},
                             {'Special':'Custom','Path':'Strategies\strategy_optimal_K1.xlsx'},
@@ -31,6 +31,6 @@ batch_means_results, batch_vars, fig_pmf, fig_ecdf = batch_means(my_game,20)
 fig_hard, fig_soft = card_heatmap(my_game,1)
 # plotly.offline.plot(fig_soft)
 
-# test_cards = [('Dummy',10),('Dummy',7)]
-# test_upcard = ('Dummy',10)
-# summary, values, results = my_game.value_actions(test_upcard,test_cards,1,500)
+test_cards = [('Dummy',5),('Dummy',7)]
+test_upcard = ('Dummy',[1,11])
+summary, values, results = my_game.value_actions(test_upcard,test_cards,6,100)
