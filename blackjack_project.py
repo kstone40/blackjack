@@ -22,7 +22,7 @@ class shoe:
     def __init__(self, decks):
         #Assign card types and values
         card_faces = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']
-        card_values = [2,3,4,5,6,7,8,9,10,10,10,10,[1,11]]
+        card_values = [2,3,4,5,6,7,8,9,10,10,10,10,11]
         suits = ['Hearts','Diamonds','Spades','Clubs']
         self.card_dict = {}
         for face,value in zip(card_faces,card_values):
@@ -102,11 +102,9 @@ class player:
         card_sum = 0
         aces_high = 0
         for card in self.cards[cardset]:
-            if type(card[1]) is list:
+            if card[1] == 11:
                 aces_high += 1
-                card_sum += max(card[1])
-            else:
-                card_sum += card[1]
+            card_sum += card[1]
         #If the count is too high and aces are present, decrease until < 21
         #Same algorithm will apply for both players and dealer
         while aces_high > 0 and card_sum > 21:
@@ -114,114 +112,98 @@ class player:
             aces_high -= 1         
         return card_sum
     
-    def act(self,upcard,cardset,react):
+    def act(self,upcard,cardset):
         
         #Decide what to do based on cards and the dealer card
-        #Convert Ace to singular 11 value
-        if type(upcard[1]) is list:
-            upcard = max(upcard[1])
-        else:
-            upcard = upcard[1]
+        upcard = upcard[1]
         
-        #Default action is stand
+        #Default action should be stand
         action = 'Stand'
         
         #React determines whether or not the player can continue to hit
-        if not react:
-            action = 'Stand'
-        else:
-            player_cards = self.cards[cardset]
-            
-            #First count the aces in the cards
-            ace_count = 0
-            have_ace = False
+        player_cards = self.cards[cardset]
+        
+        #First count the aces in the cards
+        ace_count = 0
+        have_ace = False
+        for card in range(len(player_cards)):
+            if player_cards[card][1] == 11:
+                ace_count += 1
+        if ace_count>0:
+            have_ace = True
+        
+        #If we have at least one ace, calc the sum of the other cards
+        if have_ace:
+            soft_sum = 0
             for card in range(len(player_cards)):
-                if player_cards[card][1] is list:
-                    ace_count += 1
-            if ace_count>0:
-                have_ace = True
-            
-            #If we have at least one ace, calc the sum of the other cards
-            if have_ace:
-                #If we do, what's the SUM of the other cards
-                other_card = 0
-                for card in range(len(player_cards)):
-                    other_card += np.min(player_cards[card][1]) #Use the ace low values
-            
-            #Start by checking for a potential split
-            if player_cards[0][1]==player_cards[1][1] and len(player_cards)==2 and self.split_strategy is not None:
-                if type(player_cards[0][1]) is list:
-                    double_card = 11
-                else:
-                    double_card = player_cards[0][1]
-                    
-                #If we have two cards and they are the same value...
-                action = self.split_strategy.loc[double_card,f'Dealer{upcard}']
+                soft_sum += player_cards[card][1] #Use the ace low values
+            #Set the other aces to 1s
+            soft_sum -= (ace_count-1)*10
+        
+        #Start by checking for a potential split
+        if player_cards[0][1]==player_cards[1][1] and len(player_cards)==2 and self.split_strategy is not None:
+            double_card = player_cards[0][1]
+                
+            #If we have two cards and they are the same value...
+            action = self.split_strategy.loc[double_card,f'Dealer{upcard}']
 
-            #If we don't qualify for a split, check for a soft hand
-            elif have_ace and other_card < 10:
-                action = self.soft_strategy.loc[other_card,f'Dealer{upcard}']
-                      
-            #If we don't quality for a split or soft, do the hard total
+        #If we don't qualify for a split, check for a soft hand
+        elif have_ace and soft_sum < 10:
+            action = self.soft_strategy.loc[soft_sum,f'Dealer{upcard}']
+                  
+        #If we don't quality for a split or soft, do the hard total
+        else:
+            card_sum = self.calc_sum(cardset)
+            if card_sum >= 21:
+                action = 'Stand'
             else:
-                card_sum = self.calc_sum(cardset)
-                if card_sum >= 21:
-                    action = 'Stand'
-                else:
-                    action = self.hard_strategy.loc[card_sum,f'Dealer{upcard}']
-                    
-            #Disable doubling anytime after first two cards
-            if action in ['DoubleH','DoubleS'] and len(player_cards)>2:
-                if action == 'DoubleH':
-                    action = 'Hit'
-                else:
-                    action = 'Stand'
-            
-            # #Disable doubling after split
-            # if action in ['DoubleH','DoubleS'] and len(self.cards)>1:
-            #     if action == 'DoubleH':
-            #         action = 'Hit'
-            #     else:
-            #         action = 'Stand'
-            
-            #Resolve doubles if if dis-allowed
+                action = self.hard_strategy.loc[card_sum,f'Dealer{upcard}']
+                
+        #Disable doubling anytime after first two cards
+        if action in ['DoubleH','DoubleS'] and len(player_cards)>2:
             if action == 'DoubleH':
-                if self.strat['Double'] == 1:
-                    action = 'Double'
-                else:
-                    action = 'Hit'
-            if action == 'DoubleS':
-                if self.strat['Double'] == 1:
-                    action = 'Double'
-                else:
-                    action = 'Stand'
-                    
-            #Resolve Surrender if dis-alowed
-            if action == 'SurrenderH':
-                if self.strat['Surrender'] == 1:
-                    action = 'Surrender'
-                else:
-                    action = 'Hit'
-            if action == 'SurrenderS':
-                if self.strat['Surrender'] == 1:
-                    action = 'Surrender'
-                else:
-                    action = 'Stand'
-            if action == 'SurrenderSplit':
-                if self.strat['Surrender'] == 1:
-                    action = 'Surrender'
-                else:
-                    if self.split_strategy is not None:
-                        action = 'Split'
-                    else:
-                        action = 'Hit'
-            
-            #Resolve conditional splits
-            if action == 'SplitH':
+                action = 'Hit'
+            else:
+                action = 'Stand'
+                   
+        #Resolve doubles if if dis-allowed
+        if action == 'DoubleH':
+            if self.strat['Double'] == 1:
+                action = 'Double'
+            else:
+                action = 'Hit'
+        if action == 'DoubleS':
+            if self.strat['Double'] == 1:
+                action = 'Double'
+            else:
+                action = 'Stand'
+                
+        #Resolve Surrender if dis-alowed
+        if action == 'SurrenderH':
+            if self.strat['Surrender'] == 1:
+                action = 'Surrender'
+            else:
+                action = 'Hit'
+        if action == 'SurrenderS':
+            if self.strat['Surrender'] == 1:
+                action = 'Surrender'
+            else:
+                action = 'Stand'
+        if action == 'SurrenderSplit':
+            if self.strat['Surrender'] == 1:
+                action = 'Surrender'
+            else:
                 if self.split_strategy is not None:
                     action = 'Split'
                 else:
                     action = 'Hit'
+        
+        #Resolve conditional splits
+        if action == 'SplitH':
+            if self.split_strategy is not None:
+                action = 'Split'
+            else:
+                action = 'Hit'
 
         return action
 
@@ -332,17 +314,17 @@ class game:
                     player.actions[cardset] = action
                     firstaction = False
                 else:
-                    player.actions[cardset] = player.act(dealer_card,cardset,1)
+                    player.actions[cardset] = player.act(dealer_card,cardset)
                 #HIT: Deal one more card
                 while player.actions[cardset] == 'Hit':
                     self.deal(self.shoe,player,cardset)
-                    player.actions[cardset]  = player.act(dealer_card,cardset,1)
+                    player.actions[cardset]  = player.act(dealer_card,cardset)
                 #DOUBLE DOWN: Hit, then stop
                 if player.actions[cardset] == 'Double':
                     player.double = 1
                     #This will only ever apply to the first 2 cards, no need to worry about splits
                     self.deal(self.shoe,player,cardset)
-                    player.actions[cardset] = player.act(dealer_card,cardset,0)
+                    player.actions[cardset] = player.act(dealer_card,cardset)
                 #SURRENDER: Stop
                 if player.actions[cardset] == 'Surrender':
                     player.surrender[cardset] = 1
@@ -468,7 +450,7 @@ class game:
             
             #STEP 5: Determine whether each player won or lost and how
             dealer_sum = self.players[-1].calc_sum(0)
-            for player in self.players:
+            for player in self.players[:-1]:
                 for cardset in range(len(player.cards)):
                     dvalue, result = self.resolve(player,cardset,dealer_sum)
                     player.value += dvalue
@@ -570,9 +552,6 @@ def card_heatmap(game, player_ID):
     #Assign value for each hand, IGNORING DOUBLES
     win_rules = {'DealerBust':1,'Win':1,'Bust':-1,'Beat':-1,'Surrender':-0.5,'Blackjack':game.blackjack,'Push':0}
     record_p['Value'] = record_p.apply(lambda x: win_rules[x['Result']],axis=1)
-    #Convert aces to a single 11 value
-    for cardtype in ['Card1','Card2','Dealer']:
-        record_p[cardtype] = [max(x) if type(x) is list else x for x in record_p[cardtype]]
     
     #Aggregate data for hard-totals (no aces, one cardset at a time)
     hards = record_p[-((record_p['Card1']==11)^(record_p['Card2']==11))]

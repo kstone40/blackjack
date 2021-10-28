@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 @author: Kevin Stone
-
-THINGS TO ADD:
-    Adding custom strategy
-    Show the optimal strategy in a DF
 """
 import streamlit as st
 import pandas as pd
