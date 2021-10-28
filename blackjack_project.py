@@ -43,7 +43,7 @@ class shoe:
         #Recombine and shuffle the deck
         for card in self.bin:
             self.cards.append(card)
-            self.bin.remove(card)
+        self.bin = []
         random.shuffle(self.cards)
         return
           
@@ -56,9 +56,8 @@ class player:
         #Cards and their related properties must reflect that a player might have multiple hands
         #(In the case of a split)
         self.cards = [[]]
-        self.cardsums = []
         self.surrender = []
-        self.double = 0 #Double is a single flag, can only be done on first deal
+        self.double = []
         #Record bank value
         self.value = 0
         
@@ -109,7 +108,7 @@ class player:
         #Same algorithm will apply for both players and dealer
         while aces_high > 0 and card_sum > 21:
             card_sum -= 10
-            aces_high -= 1         
+            aces_high -= 1
         return card_sum
     
     def act(self,upcard,cardset):
@@ -117,11 +116,10 @@ class player:
         #Decide what to do based on cards and the dealer card
         upcard = upcard[1]
         
-        #Default action should be stand
-        action = 'Stand'
-        
         #React determines whether or not the player can continue to hit
         player_cards = self.cards[cardset]
+        action = 'Stand' #Default action is stand
+        play = 'hard'
         
         #First count the aces in the cards
         ace_count = 0
@@ -129,11 +127,10 @@ class player:
         for card in range(len(player_cards)):
             if player_cards[card][1] == 11:
                 ace_count += 1
+                
+        #If we have at least one ace, calc the sum of the other cards
         if ace_count>0:
             have_ace = True
-        
-        #If we have at least one ace, calc the sum of the other cards
-        if have_ace:
             soft_sum = 0
             for card in range(len(player_cards)):
                 soft_sum += player_cards[card][1] #Use the ace low values
@@ -145,14 +142,16 @@ class player:
             double_card = player_cards[0][1]
                 
             #If we have two cards and they are the same value...
+            play = 'split'
             action = self.split_strategy.loc[double_card,f'Dealer{upcard}']
 
         #If we don't qualify for a split, check for a soft hand
         elif have_ace and soft_sum < 10:
+            play = 'soft'
             action = self.soft_strategy.loc[soft_sum,f'Dealer{upcard}']
                   
         #If we don't quality for a split or soft, do the hard total
-        else:
+        if play == 'hard' or action == 'No Split':
             card_sum = self.calc_sum(cardset)
             if card_sum >= 21:
                 action = 'Stand'
@@ -204,7 +203,6 @@ class player:
                 action = 'Split'
             else:
                 action = 'Hit'
-
         return action
 
 class game:
@@ -230,14 +228,13 @@ class game:
             for cardset in range(len(player.cards)):
                 for card in list(player.cards[cardset]):
                     self.shoe.bin.append(card)
-                    player.cards[cardset].remove(card)
             player.cards = [[]]
         return
     
     def deal(self,deck,player,cardset):
         #Deal a single card from the shoe to the player's cardset
         player.cards[cardset].append(deck.cards[0])
-        deck.cards.remove(deck.cards[0])
+        deck.cards.pop(0)
         return
     
     def resolve(self,player,cardset,dealer_sum):
@@ -246,30 +243,30 @@ class game:
         #Player surrendered
         if player.surrender[cardset]==1:
             result = 'Surrender'
-            dvalue = -0.5*(2**player.double)
-        #Player gets blackjack
-        elif player_sum == 21 and len(player.cards[cardset])==2 and dealer_sum != 21:
-            result = 'Blackjack'
-            dvalue = self.blackjack
+            dvalue = -0.5*(2**player.double[cardset])
         #Player busts, always a loss
         elif player_sum > 21:
             result = 'Bust'
-            dvalue = -2**player.double
+            dvalue = -2**player.double[cardset]
+        #Player gets blackjack
+        elif player_sum == 21 and len(player.cards[cardset])==2 and not (dealer_sum == 21 and len(self.players[-1].cards[0])==2):
+            result = 'Blackjack'
+            dvalue = self.blackjack
         #Dealer busts, player doesn't 
         elif dealer_sum > 21 and player_sum <= 21:
             result = 'DealerBust'
-            dvalue = 2**player.double
+            dvalue = 2**player.double[cardset]
         #No one busts
         elif dealer_sum <= 21 and player_sum <= 21:
             if player_sum > dealer_sum:
                 result = 'Win'
-                dvalue = 2**player.double
+                dvalue = 2**player.double[cardset]
             elif player_sum == dealer_sum:
                 result = 'Push'
                 dvalue = 0
             else:
                 result = 'Beat'
-                dvalue = -2**player.double
+                dvalue = -2**player.double[cardset]
       
         return dvalue, result
 
@@ -321,10 +318,10 @@ class game:
                     player.actions[cardset]  = player.act(dealer_card,cardset)
                 #DOUBLE DOWN: Hit, then stop
                 if player.actions[cardset] == 'Double':
-                    player.double = 1
+                    player.double[cardset] = 1
                     #This will only ever apply to the first 2 cards, no need to worry about splits
                     self.deal(self.shoe,player,cardset)
-                    player.actions[cardset] = player.act(dealer_card,cardset)
+                    player.actions[cardset] = 'Stand'
                 #SURRENDER: Stop
                 if player.actions[cardset] == 'Surrender':
                     player.surrender[cardset] = 1
@@ -333,13 +330,15 @@ class game:
                     #Take the second card from the current cardset, add it as a new cardset
                     player.cards.append([player.cards[cardset][1]])
                     player.cards[cardset].remove(player.cards[cardset][1])
+                    
                     #Splitting demands re-evaluation for each card set
                     player.actions.append('None')
                     player.actions[cardset] == 'None'
-                    player.surrender.append([0])
-                    max_cardset = len(player.cards)-1
+                    player.surrender.append(0)
+                    player.double.append(0)
+                    max_cardset = len(player.cards)
                     self.deal(self.shoe,player,cardset)
-                    self.deal(self.shoe,player,max_cardset)
+                    self.deal(self.shoe,player,max_cardset-1)
 
         return
     
@@ -437,7 +436,7 @@ class game:
                 for player in self.players:
                     self.deal(self.shoe,player,0) 
                     #Reset the flag for double down and reset the player decision
-                    player.double = 0
+                    player.double = [0]
                     player.surrender = [0]
                     player.actions = ['None']
             
@@ -455,9 +454,11 @@ class game:
                     dvalue, result = self.resolve(player,cardset,dealer_sum)
                     player.value += dvalue
                     record = {'Hand':hand,'Cardset':cardset, 'Player':player.ID, 'Role':player.role, 'Value':player.value,
-                              'PlayerCards':copy.deepcopy(player.cards), 'DealerUpcard':dealer_card}
+                              'PlayerCards':copy.deepcopy(player.cards), 'DealerUpcard':dealer_card,
+                              'Dealer Cards':copy.deepcopy(self.players[-1].cards), 'DealerSum':dealer_sum,
+                              'dValue':dvalue, 'Player Sum': player.calc_sum(cardset)}
                     record['Result'] = result
-                    record['Double'] = (player.double==1)
+                    record['Double'] = (player.double[cardset]==1)
                     #Add the record of this hand/player to the record keeper
                     self.record_keeper.append(record)
                     

@@ -11,7 +11,7 @@ from blackjack_project import *
 import plotly
 
 random.seed('6644')
-options = {'hands':100000,
+options = {'hands':1000000,
             'player_count':1,
             # 'player_strat':[{'Special':'Custom','Path':'Strategies\strategy_optimal_K0.xlsx'},
             #                 {'Special':'Custom','Path':'Strategies\strategy_optimal_K1.xlsx'},
@@ -21,10 +21,10 @@ options = {'hands':100000,
             #                 {'Special':'Custom','Path':'Strategies\strategy_optimal_K5.xlsx'},
             #                 {'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
             'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
-            'decks_per_shoe':6,
+            'decks_per_shoe':8,
             'cut_in':0,
             'blackjack':3/2,
-            'dealerhitsoft17':1}
+            'dealerhitsoft17':0}
 my_game = game(options)
 my_game.play()
 stats, edges = my_game.score()
