@@ -196,15 +196,12 @@ if 'my_game' in vars():
            
     value_comparison = st.expander('Player Action Analyzer')
     with value_comparison:
-        card_vals = list(range(2,11))
-        card_vals.append([1,11])
-        card_names = ['2','3','4','5','6','7','8','9','10/Face','Ace']
-        card_options = list(zip(card_names, card_vals))
+        card_options = list(range(2,12))
         
         card_entry_cols = st.columns(4)
-        card1 =  card_entry_cols[0].selectbox('Player Card 1', card_names)
-        card2 = card_entry_cols[1].selectbox('Player Card 2', card_names)
-        upcard = card_entry_cols[2].selectbox('Dealer Upcard', card_names)
+        card1 =  card_entry_cols[0].selectbox('Player Card 1', card_options)
+        card2 = card_entry_cols[1].selectbox('Player Card 2', card_options)
+        upcard = card_entry_cols[2].selectbox('Dealer Upcard', card_options)
         player_ID = card_entry_cols[3].selectbox('Player ID', list(range(1,1+my_game.player_count)),
                                                  help="Select a player's strategy to use for sequential actions that follow the first, fixed action (i.e. continuous hits, or splits)")
         iterations = st.number_input('Iterations',
@@ -212,7 +209,7 @@ if 'my_game' in vars():
                                                help='Enter the number of hands to test in the optimizer')
         optimize_action = st.button('Go!')
         if optimize_action:
-            summary, values, results = my_game.value_actions(card_options[card_names.index(upcard)],[card_options[card_names.index(card1)],card_options[card_names.index(card2)]],player_ID,iterations)
+            summary, values, results = my_game.value_actions(upcard,[card1, card2],player_ID,iterations)
             st.write(summary)
             
             fig_actions = go.Figure()

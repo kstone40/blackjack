@@ -222,6 +222,7 @@ class Game:
                 #Last Step:
                 self.resolve(h)
         self.record_keeper = pd.DataFrame(self.record_keeper)
+        sim_prog.empty()
         return
     
         
@@ -377,9 +378,11 @@ class Game:
                     while not all(item in ['Stand','Surrender'] for item in actions):
                         self.act(player,actions)
                         actions = player.decide(upcard)
-                        
+                
                 #Last Step:
                 dvalues, outcomes = self.resolve(i_, ignore_record=True)
+                if outcomes[0] == 'Dealer Blackjack':
+                    continue
 
                 values[action].append(dvalues[0])
                 results[action].append(outcomes[0])
