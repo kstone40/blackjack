@@ -30,7 +30,7 @@ st.subheader('First, consider reviewing the fundamentals below.')
 options = {}
 st.sidebar.header('Simulation Options')    
 options['hands'] = st.sidebar.number_input('Hands',
-                                               min_value=0,max_value=1000000,value=1000,step=100,
+                                               min_value=0,max_value=1000000,value=100000,step=1000,
                                                help='Enter the number of hands to simulate') 
 seed = st.sidebar.text_input('Random Seed',value='6644',max_chars=10,help='(Optional) Random Seed')
 
