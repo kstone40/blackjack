@@ -129,7 +129,7 @@ def set_game(options):
 
 @st.cache(allow_output_mutation=True,suppress_st_warning=True)
 def play_game(options,seed):
-    my_game = game(options)
+    my_game = Game(options)
     random.seed(seed)
     my_game.play()
     return my_game
