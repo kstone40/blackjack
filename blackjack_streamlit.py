@@ -158,7 +158,7 @@ if 'my_game' in vars():
         st.write(edges)
         statscols = st.columns(options['player_count'])
         for p_ in range(options['player_count']):
-            statscols[p_].write(f'Summary Statistics for {options['player_names'][p_]}')
+            statscols[p_].write(f"Summary Statistics for {options['player_names'][p_]}")
             statscols[p_].write(stats.loc[p_+1])
             
         fig_stats = go.Figure()
@@ -172,7 +172,7 @@ if 'my_game' in vars():
         st.plotly_chart(fig_stats, use_container_width=True)
         
         for p_ in range(options['player_count']):
-            st.write(f'Realized Card Values for Player {options['player_names'][p_]}')
+            st.write(f"Realized Card Values for Player {options['player_names'][p_]}")
             fig_hard, fig_soft = card_heatmap(my_game, p_+1)
             heatmap_cols = st.columns(2)
             with heatmap_cols[0]:

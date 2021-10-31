@@ -381,8 +381,8 @@ class Game:
                 
                 #Last Step:
                 dvalues, outcomes = self.resolve(i_, ignore_record=True)
-                if outcomes[0] == 'Dealer Blackjack':
-                    continue
+                if outcomes[0] in ['Dealer Blackjack', 'Blackjack']:
+                    continue #No actions to decide on in these cases, so don't bother aggregating
 
                 values[action].append(dvalues[0])
                 results[action].append(outcomes[0])
