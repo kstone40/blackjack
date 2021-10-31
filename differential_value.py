@@ -32,7 +32,7 @@ iterations = 500
 def record_actions(first_cards, second_card_ranges, strategy):
     #Strategy is 'hard' 'soft' or 'split'
     #Generate a list of possible dummy cards
-    possible_cards = [val for val in range(2,10)] + [10]*4 + [11]
+    possible_cards = list(range(2,12))
     records = []
     for upcard in possible_cards:
         for first_card, second_card_range in zip(first_cards, second_card_ranges):
@@ -82,7 +82,7 @@ records_soft = record_actions(first_cards, second_card_ranges, 'soft')
 
 card_vals = list(range(2,11))
 card_vals.append(11)
-possible_cards = [val for val in range(2,10)] + [10]*4 + [11]
+possible_cards = list(range(2,12))
 records_split = record_actions(possible_cards, possible_cards, 'split')
 
 card_probs = pd.read_csv('Card Probabilities.csv', index_col = 0)
@@ -120,7 +120,7 @@ for type_i in type_list:
                                           y=all_comp_short[type_i],
                                           x=all_comp_short['Dealer'],
                                           zmin = 0,
-                                          zmax = 0.01,
+                                          zmax = 0.0015,
                                           colorscale = 'GnBu',
                                           colorbar = {'title':'Value'}))
     

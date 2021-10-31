@@ -38,7 +38,7 @@ st.sidebar.header('Game Options')
 options['blackjack'] = st.sidebar.number_input('BlackJack Value',
                                                min_value=0.0,max_value=None,value=1.5,
                                                help='Enter the value (multiplier of bet) that a natural BlackJack should return')      
-options['dealerhitsoft17'] = st.sidebar.checkbox('Dealer Hits on Soft 17?', value=1,
+options['H17'] = st.sidebar.checkbox('Dealer Hits on Soft 17?', value=1,
                                                  help ='Check if you want to simulate a dealer that hits on soft 17s')
 options['decks_per_shoe'] = st.sidebar.number_input('Decks per Shoe',
                                                min_value=0,max_value=None,value=6,step=1,
@@ -165,8 +165,8 @@ if 'my_game' in vars():
         for p_ in range(options['player_count']):
             player_stats = stats.loc[p_+1]
             player_stats['Double Label'] = np.where(player_stats['Double']==True,'Double','Standard')
-            fig_stats.add_trace(go.Bar(x=player_stats['Result'],y=player_stats['Frequency'],name=f'Player {p_+1}',text = player_stats['Double Label']))
-        fig_stats.update_xaxes(title_text='Result')
+            fig_stats.add_trace(go.Bar(x=player_stats['Outcome'],y=player_stats['Frequency'],name=f'Player {p_+1}',text = player_stats['Double Label']))
+        fig_stats.update_xaxes(title_text='Outcome)
         fig_stats.update_yaxes(title_text='Frequency')
         fig_stats.update_layout(title_text='Comparison of Player Outcomes')
         st.plotly_chart(fig_stats, use_container_width=True)
