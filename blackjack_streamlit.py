@@ -46,7 +46,7 @@ options['HitAASplit'] = st.sidebar.checkbox('Allow hitting after splitting Aces?
                                                  help ='Check if you want to allow further hitting or other actions after splitting Aces')
 options['ResplitAA'] = st.sidebar.checkbox('Allow re-splitting of split Aces?', value=1,
                                                  help ='Check if you want to allow sequential splitting of Aces')
-options['MaxSplits'] = st.sidebar.number_input('Maximum allowed splits', value=3, min_value=0, max_value=10, step=1,
+options['MaxSplits'] = st.sidebar.number_input('Maximum allowed splits', value=3, min_value=1, max_value=10, step=1,
                                                  help ='Enter the maximum allowable splits (max number of simultaneous player hands will be +1)')
 options['decks_per_shoe'] = st.sidebar.number_input('Decks per Shoe',
                                                min_value=0,max_value=None,value=6,step=1,
