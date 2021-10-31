@@ -38,6 +38,6 @@ fig_hard, fig_soft = card_heatmap(test_game,1)
 # plotly.offline.plot(fig_hard)
 # plotly.offline.plot(fig_soft)
 
-test_cards = [10,2]
-test_upcard = 11
-summary, values, results = test_game.value_actions(test_upcard,test_cards,1,1000)
+# test_cards = [10,2]
+# test_upcard = 11
+# summary, values, results = test_game.value_actions(test_upcard,test_cards,1,1000)

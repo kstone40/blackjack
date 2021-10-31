@@ -27,7 +27,7 @@ my_game.play()
 dealer_strat_hard = my_game.players[-1].strat_hard
 dealer_strat_soft = my_game.players[-1].strat_soft
 
-iterations = 500
+iterations = 5000
 
 def record_actions(first_cards, second_card_ranges, strategy):
     #Strategy is 'hard' 'soft' or 'split'
