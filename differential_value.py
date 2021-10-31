@@ -14,29 +14,27 @@ import plotly
 random.seed('6644')
 options = {'hands':10,
             'player_count':1,
+            'player_names':['Kevin'],
             'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
             'decks_per_shoe':6,
             'cut_in':4,
             'blackjack':3/2,
-            'dealerhitsoft17':1}
-my_game = game(options)
+            'H17':1}
+my_game = Game(options)
 my_game.play()
 
 #Load in the alternative strategy
-dealer_hard_strategy = my_game.players[-1].hard_strategy
-dealer_soft_strategy = my_game.players[-1].soft_strategy
+dealer_strat_hard = my_game.players[-1].strat_hard
+dealer_strat_soft = my_game.players[-1].strat_soft
 
-iterations = 10000
+iterations = 500
 
 def record_actions(first_cards, second_card_ranges, strategy):
     #Strategy is 'hard' 'soft' or 'split'
     #Generate a list of possible dummy cards
-    card_vals = list(range(2,11))
-    card_vals.append([1,11])
-    possible_cards = list(zip(['Dummy']*11, card_vals))
+    possible_cards = [val for val in range(2,10)] + [10]*4 + [11]
     records = []
     for upcard in possible_cards:
-        upcard_val = np.max(upcard[1])
         for first_card, second_card_range in zip(first_cards, second_card_ranges):
             if strategy == 'split':
                 second_card_range = [first_card]
@@ -44,22 +42,20 @@ def record_actions(first_cards, second_card_ranges, strategy):
                 record = {}
                 player_cards = [first_card, second_card]
                 record['Player Cards'] = player_cards
-                record['Dealer'] = upcard_val
+                record['Dealer'] = upcard
                 if strategy == 'hard':
-                    player_sum = first_card[1] + second_card[1]
+                    player_sum = first_card + second_card
                     record['Hard Total'] = player_sum
-                    alt_action = dealer_hard_strategy.loc[player_sum,f'Dealer{upcard_val}']
+                    alt_action = dealer_strat_hard.loc[player_sum,f'Dealer{upcard}']
                 if strategy == 'soft':
-                    other_card_val = np.max(second_card[1])
-                    record['Soft Other Card'] = other_card_val
-                    alt_action = dealer_soft_strategy.loc[other_card_val,f'Dealer{upcard_val}']
+                    record['Soft Other Card'] = second_card
+                    alt_action = dealer_strat_soft.loc[second_card,f'Dealer{upcard}']
                 if strategy == 'split':
-                    split_card_val = np.max(second_card[1])
-                    record['Split Card'] = split_card_val
-                    if split_card_val < 11:
-                        alt_action = dealer_hard_strategy.loc[2*split_card_val,f'Dealer{upcard_val}']
+                    record['Split Card'] = second_card
+                    if second_card < 11:
+                        alt_action = dealer_strat_hard.loc[2*second_card,f'Dealer{upcard}']
                     else:
-                        alt_action = dealer_hard_strategy.loc[12,f'Dealer{upcard_val}']
+                        alt_action = dealer_strat_hard.loc[12,f'Dealer{upcard}']
                 summary, values, results = my_game.value_actions(upcard,player_cards,1,iterations)    
                 record['Alt Action'] = alt_action
                 alt_action_value = summary[alt_action]['Mean']
@@ -76,17 +72,17 @@ def record_actions(first_cards, second_card_ranges, strategy):
                 print(record)
     return pd.DataFrame(records)         
 
-first_cards = [('Dummy',2),('Dummy',10)]
-second_card_ranges = [list(zip(['Dummy']*8,range(3,11))),list(zip(['Dummy']*6,range(3,9)))]
+first_cards = [2,10]
+second_card_ranges = [list(range(3,11)),list(range(3,9))]
 records_hard = record_actions(first_cards, second_card_ranges, 'hard')
 
-first_cards = [('Dummy',[1,11])]
-second_card_ranges = [list(zip(['Dummy']*8,range(2,10)))]
+first_cards = [11]
+second_card_ranges = [list(range(2,10))]
 records_soft = record_actions(first_cards, second_card_ranges, 'soft')
 
 card_vals = list(range(2,11))
-card_vals.append([1,11])
-possible_cards = list(zip(['Dummy']*11, card_vals))
+card_vals.append(11)
+possible_cards = [val for val in range(2,10)] + [10]*4 + [11]
 records_split = record_actions(possible_cards, possible_cards, 'split')
 
 card_probs = pd.read_csv('Card Probabilities.csv', index_col = 0)
@@ -123,8 +119,8 @@ for type_i in type_list:
     fig = go.Figure(data = go.Heatmap(z=all_comp_short['Weighted Value'],
                                           y=all_comp_short[type_i],
                                           x=all_comp_short['Dealer'],
-                                          #zmin = 0,
-                                          #zmax = 0.001,
+                                          zmin = 0,
+                                          zmax = 0.01,
                                           colorscale = 'GnBu',
                                           colorbar = {'title':'Value'}))
     

@@ -51,7 +51,7 @@ options['player_count'] = st.sidebar.number_input('Number of Players',
                                                   help='Enter the number of players/strategies to simulate together')
 
 #Load in the appropriate optimal strategy
-if options['dealerhitsoft17'] == 1:
+if options['H17'] == 1:
     char = 'H'
 else:
     char = 'S'
@@ -82,6 +82,7 @@ st.subheader('Next, populate the sidebar (left) with options that you choose to 
 
 
 options['player_strat'] = []
+options['player_names'] = []
 
 player_strats = st.sidebar.expander('Player Strategies')
 with player_strats:
@@ -89,7 +90,8 @@ with player_strats:
         st.subheader(f'Player {p_+1}')
         custom_strat = player_strats.checkbox('Custom?', value=0, key=str(p_)+'strat_custom',
                                           help ='Check if you want to upload a custom strategy')
-        options['player_strat'].append({})
+        options['player_names'].append({})
+        options['player_strat'] = player_strats.text_input('Name', value=f'Player{p_+1}', key=str(p_)+'name')
         if custom_strat:
             #Show example file
             data = open('Strategies/strategy_custom_example.xlsx', 'rb').read()
