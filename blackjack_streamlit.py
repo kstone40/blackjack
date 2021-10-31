@@ -166,7 +166,7 @@ if 'my_game' in vars():
             player_stats = stats.loc[p_+1]
             player_stats['Double Label'] = np.where(player_stats['Double']==True,'Double','Standard')
             fig_stats.add_trace(go.Bar(x=player_stats['Outcome'],y=player_stats['Frequency'],name=f'Player {p_+1}',text = player_stats['Double Label']))
-        fig_stats.update_xaxes(title_text='Outcome)
+        fig_stats.update_xaxes(title_text='Outcome')
         fig_stats.update_yaxes(title_text='Frequency')
         fig_stats.update_layout(title_text='Comparison of Player Outcomes')
         st.plotly_chart(fig_stats, use_container_width=True)
