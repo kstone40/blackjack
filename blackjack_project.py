@@ -14,462 +14,391 @@ import plotly.figure_factory as ff
 import numpy as np
 import streamlit as st
 
-#For local running/troubleshooting, trigger plotting in broser
-import plotly.io as pio
-pio.renderers.default='browser'
+def strat_loader(role,H17,hard=0,soft=0,split=0,custom_path=None):
+    assert type(custom_path) is str or custom_path == None
+    #Load in dealer and optimal strategies for the two major variations
+    if H17:
+        HS17 = 'H'
+    else:
+        HS17 = 'S'
+    dealer_strat = pd.ExcelFile(f'Strategies/strategy_dealer_{HS17}17.xlsx')
+    optimal_strat = pd.ExcelFile(f'Strategies/strategy_optimal_{HS17}17.xlsx')
+    #Load player strategies from CSV decision tables
+    if role == 'Dealer':
+        hard_strategy = pd.read_excel(dealer_strat, 'hard').set_index('Player')
+        soft_strategy = pd.read_excel(dealer_strat, 'soft').set_index('Player')
+        split_strategy = pd.read_excel(dealer_strat, 'split').set_index('Player')
+    if custom_path is not None:
+        custom_strat = pd.ExcelFile(custom_path)
+        hard_strategy = pd.read_excel(custom_strat, 'hard').set_index('Player')
+        soft_strategy = pd.read_excel(custom_strat, 'soft').set_index('Player')
+        split_strategy = pd.read_excel(custom_strat, 'split').set_index('Player')
+    else:
+        if hard:
+            hard_strategy = pd.read_excel(optimal_strat, 'hard').set_index('Player')      
+        else:
+            hard_strategy = pd.read_excel(dealer_strat, 'hard').set_index('Player')     
+        if soft:
+            soft_strategy = pd.read_excel(optimal_strat, 'soft').set_index('Player')
+        else:
+            soft_strategy = pd.read_excel(dealer_strat, 'soft').set_index('Player')
+        if split:
+            split_strategy = pd.read_excel(optimal_strat, 'split').set_index('Player')
+        else:
+            split_strategy = pd.read_excel(dealer_strat, 'split').set_index('Player')
+    return (hard_strategy, soft_strategy, split_strategy)
 
-class shoe:
-    def __init__(self, decks):
-        #Assign card types and values
-        card_faces = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']
-        card_values = [2,3,4,5,6,7,8,9,10,10,10,10,11]
-        suits = ['Hearts','Diamonds','Spades','Clubs']
-        self.card_dict = {}
-        for face,value in zip(card_faces,card_values):
-            self.card_dict[face]=value
-        #Build a deck based on the suits and card-value dictionary
-        deck = []
-        for suit in suits:
-            for key,value in self.card_dict.items():
-                name = key + ' of ' + suit
-                deck.append((name, value))
-        #Assemble the decks into the shoe, then shuffle
-        self.cards = deck*decks #Deck replicates
-        self.bin = [] # Used cards
+def calc_sum(cards):
+    cardsum = sum(cards)
+    ace_high = cards.count(11)
+    while cardsum > 21 and ace_high > 0:
+        cardsum -= 10
+        ace_high -= 1
+    return cardsum
+
+class Deck:
+    def __init__(self, n_decks):
+        #Create N 52-card decks
+        cards = [val for val in range(2,10)] + [10]*4 + [11]
+        self.cards = cards*4*n_decks
+        self.discard = [] #Discard pile for played cards between shuffles
         self.shuffle()
         return
-    
+
     def shuffle(self):
-        #Recombine and shuffle the deck
-        for card in self.bin:
+        #Recombine the deck and shuffle
+        for card in self.discard:
             self.cards.append(card)
-        self.bin = []
+        self.discard = []
         random.shuffle(self.cards)
         return
-          
-class player:
-    def __init__(self,ID,role,strat,dealerhitsoft17):
-        #Store basic player information
+    
+    def deal(self,hand):
+        #Deal 1 card to the hand
+        hand['Cards'].append(self.cards[0])
+        self.cards.pop(0)
+        return
+
+class Player:
+    def __init__(self,ID,role,name,strat,H17):
+        #Store basic information
         self.ID = ID
         self.role = role
-        #Store player cards, will get reset after every hand
-        #Cards and their related properties must reflect that a player might have multiple hands
-        #(In the case of a split)
-        self.cards = [[]]
-        self.surrender = []
-        self.double = []
-        #Record bank value
-        self.value = 0
-        
-        #Load in dealer and optimal strategies for the two major variations
-        if dealerhitsoft17 == 1:
-            char = 'H'
-        else:
-            char = 'S'
-        dealer_strat = pd.ExcelFile(f'Strategies/strategy_dealer_{char}17.xlsx')
-        optimal_strat = pd.ExcelFile(f'Strategies/strategy_optimal_{char}17.xlsx')
-        
-        #Load player strategies from CSV decision tables
+        self.name = name
         self.strat = strat
-        if 'Special' in strat.keys():
-            if strat['Special'] == 'Dealer':
-                self.hard_strategy = pd.read_excel(dealer_strat, 'hard').set_index('Player')
-                self.soft_strategy = pd.read_excel(dealer_strat, 'soft').set_index('Player')
-                self.split_strategy = None
-            elif strat['Special'] == 'Custom':
-                custom_strat = pd.ExcelFile(strat['Path'])
-                self.hard_strategy = pd.read_excel(custom_strat, 'hard').set_index('Player')
-                self.soft_strategy = pd.read_excel(custom_strat, 'soft').set_index('Player')
-                self.split_strategy = pd.read_excel(custom_strat, 'split').set_index('Player')
-        else:
-            if strat['Hard'] == 0:
-                self.hard_strategy = pd.read_excel(dealer_strat, 'hard').set_index('Player')     
-            else:
-                self.hard_strategy = pd.read_excel(optimal_strat, 'hard').set_index('Player')  
-            if strat['Soft'] == 0:
-                self.soft_strategy = pd.read_excel(dealer_strat, 'soft').set_index('Player')
-            else:
-                self.soft_strategy = pd.read_excel(optimal_strat, 'soft').set_index('Player')
-            if strat['Split'] == 0:
-                self.split_strategy = None
-            else:
-                self.split_strategy = pd.read_excel(optimal_strat, 'split').set_index('Player')
+        self.H17 = H17
+        
+        self.hands=[]
+        self.bank = 0
+        self.strat_hard, self.strat_soft, self.strat_split = strat_loader(self.role,H17,strat['Hard'],strat['Soft'],strat['Split'])
         return
     
-    def calc_sum(self,cardset):
-        #Add up all of the cards, start with all aces high (11)
-        card_sum = 0
-        aces_high = 0
-        for card in self.cards[cardset]:
-            if card[1] == 11:
-                aces_high += 1
-            card_sum += card[1]
-        #If the count is too high and aces are present, decrease until < 21
-        #Same algorithm will apply for both players and dealer
-        while aces_high > 0 and card_sum > 21:
-            card_sum -= 10
-            aces_high -= 1
-        return card_sum
+    def decide(self,upcard):
+        actions = []
+        for hand in self.hands:           
+            if hand['Action'] not in ['Stand','Surrender']:
+                action = None
+                cards = hand['Cards']
+                player_sum = calc_sum(cards)
+                #Special rules
+                max_splits = 3
+                DAS = 1 #Double after split
+                
+                allow_double = True
+                if not DAS and len(self.hands)>1:
+                    allow_double = False
+                if len(cards)>2:
+                    allow_double = False
+                if not self.strat['Double']:
+                    allow_double = False
+                    
+                allow_surrender = True
+                if not self.strat['Surrender']:
+                    allow_surrender = False
+                if len(cards)>2  or len(self.hands)>1: #Late surrender
+                    allow_surrender = False
+                
+                allow_split = True
+                if len(self.hands)>max_splits:
+                    allow_split = False
+                
+
+                if len(cards)==2 and cards[0]==cards[1] and allow_split:
+                    action = self.strat_split.loc[cards[0], f'Dealer{upcard}']
+                elif 11 in cards:
+                    ace_index = cards.index(11)
+                    cards.remove(11)
+                    ace_count = cards.count(11)
+                    soft_sum = sum(cards)
+                    soft_sum -= 10*ace_count
+                    if soft_sum < 10:
+                        action = self.strat_soft.loc[soft_sum, f'Dealer{upcard}']
+                    cards.insert(ace_index,11)
+                    
+                if action in [None, 'No Split'] and player_sum <= 21:
+                    action = self.strat_hard.loc[player_sum, f'Dealer{upcard}']
+                    
+                if action == None and player_sum >= 21:
+                    action = 'Stand'
+                              
+                action_replacements = {'DoubleH':'Hit','DoubleS':'Stand','SurrenderH':'Hit','SurrenderS':'Stand',
+                                       'SplitH':'Hit','SurrenderSplit':'Split'}
+                
+                if 'Double' in action:
+                    if not allow_double:
+                        action = action_replacements[action]
+                    else:
+                        action = 'Double'
+                if 'Surrender' in action:
+                    if not allow_surrender:
+                        action = action_replacements[action]
+                    else:
+                        action = 'Surrender'
+                if 'Split' in action:
+                    if not allow_split:
+                        action = action_replacements[action]
+                    else:
+                        action = 'Split'
+                
+                hand['Action'] = action
+            actions.append(hand['Action'])
+        return actions
     
-    def act(self,upcard,cardset):
-        
-        #Decide what to do based on cards and the dealer card
-        upcard = upcard[1]
-        
-        #React determines whether or not the player can continue to hit
-        player_cards = self.cards[cardset]
-        action = 'Stand' #Default action is stand
-        play = 'hard'
-        
-        #First count the aces in the cards
-        ace_count = 0
-        have_ace = False
-        for card in range(len(player_cards)):
-            if player_cards[card][1] == 11:
-                ace_count += 1
-                
-        #If we have at least one ace, calc the sum of the other cards
-        if ace_count>0:
-            have_ace = True
-            soft_sum = 0
-            for card in range(len(player_cards)):
-                soft_sum += player_cards[card][1] #Use the ace low values
-            #Set the other aces to 1s
-            soft_sum -= (ace_count-1)*10
-        
-        #Start by checking for a potential split
-        if player_cards[0][1]==player_cards[1][1] and len(player_cards)==2 and self.split_strategy is not None:
-            double_card = player_cards[0][1]
-                
-            #If we have two cards and they are the same value...
-            play = 'split'
-            action = self.split_strategy.loc[double_card,f'Dealer{upcard}']
-
-        #If we don't qualify for a split, check for a soft hand
-        elif have_ace and soft_sum < 10:
-            play = 'soft'
-            action = self.soft_strategy.loc[soft_sum,f'Dealer{upcard}']
-                  
-        #If we don't quality for a split or soft, do the hard total
-        if play == 'hard' or action == 'No Split':
-            card_sum = self.calc_sum(cardset)
-            if card_sum >= 21:
-                action = 'Stand'
-            else:
-                action = self.hard_strategy.loc[card_sum,f'Dealer{upcard}']
-                
-        #Disable doubling anytime after first two cards
-        if action in ['DoubleH','DoubleS'] and len(player_cards)>2:
-            if action == 'DoubleH':
-                action = 'Hit'
-            else:
-                action = 'Stand'
-                   
-        #Resolve doubles if if dis-allowed
-        if action == 'DoubleH':
-            if self.strat['Double'] == 1:
-                action = 'Double'
-            else:
-                action = 'Hit'
-        if action == 'DoubleS':
-            if self.strat['Double'] == 1:
-                action = 'Double'
-            else:
-                action = 'Stand'
-                
-        #Resolve Surrender if dis-alowed
-        if action == 'SurrenderH':
-            if self.strat['Surrender'] == 1:
-                action = 'Surrender'
-            else:
-                action = 'Hit'
-        if action == 'SurrenderS':
-            if self.strat['Surrender'] == 1:
-                action = 'Surrender'
-            else:
-                action = 'Stand'
-        if action == 'SurrenderSplit':
-            if self.strat['Surrender'] == 1:
-                action = 'Surrender'
-            else:
-                if self.split_strategy is not None:
-                    action = 'Split'
-                else:
-                    action = 'Hit'
-        
-        #Resolve conditional splits
-        if action == 'SplitH':
-            if self.split_strategy is not None:
-                action = 'Split'
-            else:
-                action = 'Hit'
-        return action
-
-class game:
+class Game:
     def __init__(self,options):
         #Store all of the options as class attributes
         for key in options.keys():
             setattr(self, key, options[key])
         
+        #Get ready to store hand results
+        self.record_keeper = []
+        self.house_bank= 0
+        
         #Generate each player, with given strategy, as required
         self.players = []
         for p_ in range(self.player_count):
-            self.players.append(player(p_+1,'Guest',self.player_strat[p_],self.dealerhitsoft17))
+            self.players.append(Player(p_+1,'Guest',self.player_names[p_],self.player_strat[p_],self.H17))
             
-        self.players.append(player(self.player_count+1,'Dealer',{'Special':'Dealer'},self.dealerhitsoft17))
+        self.players.append(Player(self.player_count+1,'Dealer','Dale',{'Hard':0,'Soft':0,'Split':0,'Double':0,'Surrender':0},self.H17))
             
         #Generate the shoe
-        self.shoe = shoe(self.decks_per_shoe)
+        self.deck = Deck(self.decks_per_shoe)
         return
     
-    def collect(self):
-        #Removes all of the cards from every player and adds them to the shoe's discard pile
-        for player in self.players:
-            for cardset in range(len(player.cards)):
-                for card in list(player.cards[cardset]):
-                    self.shoe.bin.append(card)
-            player.cards = [[]]
+    def play(self):
+        sim_prog = st.progress(0)
+        for h in range(self.hands):
+            if (h+1)%1000==0:
+                print(f'Hand # {h+1}')
+            #Repeat these steps every hand
+            sim_prog.progress((h+1)/self.hands)
+            
+            #Step 1: Shuffle if necessary
+            if len(self.deck.discard)>self.cut_in*52:
+                self.deck.shuffle()
+                
+            #Step 2: Dealer two cards to each player, dealer last each time
+            for player in self.players:
+                player.hands.append({'Order':0,'Cards':[],'Action':None,'Double':False})
+            for initial_card in range(2):
+                for player in self.players:
+                    self.deck.deal(player.hands[0])
+            
+            #Step 3: Assess the upcard and hole card
+            upcard = self.players[-1].hands[0]['Cards'][0]
+            holecard = self.players[-1].hands[0]['Cards'][1]
+            
+            #Step 4: Immediately after deal, check to see if dealer has natural blackjack
+            if upcard+holecard == 21:
+                self.resolve(h)
+            else:            
+                #Step 5: One player at a time, let each make decisions until all hands stand (or bust)
+                for player in self.players:
+                    if player.hands[0]['Action'] is None: #We may pass a first action in a testing script
+                        actions = player.decide(upcard)
+                    while not all(item in ['Stand','Surrender'] for item in actions):
+                        self.act(player,actions)
+                        actions = player.decide(upcard)
+                #Last Step:
+                self.resolve(h)
+        self.record_keeper = pd.DataFrame(self.record_keeper)
         return
     
-    def deal(self,deck,player,cardset):
-        #Deal a single card from the shoe to the player's cardset
-        player.cards[cardset].append(deck.cards[0])
-        deck.cards.pop(0)
-        return
-    
-    def resolve(self,player,cardset,dealer_sum):
-        player_sum = player.calc_sum(cardset)
         
-        #Player surrendered
-        if player.surrender[cardset]==1:
-            result = 'Surrender'
-            dvalue = -0.5*(2**player.double[cardset])
-        #Player busts, always a loss
-        elif player_sum > 21:
-            result = 'Bust'
-            dvalue = -2**player.double[cardset]
-        #Player gets blackjack
-        elif player_sum == 21 and len(player.cards[cardset])==2 and not (dealer_sum == 21 and len(self.players[-1].cards[0])==2):
-            result = 'Blackjack'
-            dvalue = self.blackjack
-        #Dealer busts, player doesn't 
-        elif dealer_sum > 21 and player_sum <= 21:
-            result = 'DealerBust'
-            dvalue = 2**player.double[cardset]
-        #No one busts
-        elif dealer_sum <= 21 and player_sum <= 21:
-            if player_sum > dealer_sum:
-                result = 'Win'
-                dvalue = 2**player.double[cardset]
-            elif player_sum == dealer_sum:
-                result = 'Push'
-                dvalue = 0
-            else:
-                result = 'Beat'
-                dvalue = -2**player.double[cardset]
-      
-        return dvalue, result
+    def act(self,player,actions):
+        for h,action in enumerate(actions):
+            if action == 'Hit':
+                self.deck.deal(player.hands[h])
+            if action == 'Double':
+                self.deck.deal(player.hands[h])
+                player.hands[h]['Double'] = True
+                player.hands[h]['Action'] = 'Stand'
+            if action == 'Split':
+                h_len = len(player.hands)
+                player.hands.append({'Order':h_len,'Cards':[],'Action':None,'Double':False})
+                player.hands[-1]['Cards'].append(player.hands[h]['Cards'][0])
+                player.hands[h]['Cards'].pop(0)
+                self.deck.deal(player.hands[h])
+                self.deck.deal(player.hands[-1])
+                # if player.hands[h]['Cards'][0]==11: #Can't re-hit split aces
+                #     player.hands[-1]['Action'] = 'Stand'
+                #     player.hands[h]['Action'] = 'Stand'
+        return
+    
+    def resolve(self, h, ignore_record=False):
+        #Outcome-Value Relationships
+        values = {'Beat':-1,'Bust':-1,'Dealer Blackjack':-1,
+                  'Surrender':-0.5,
+                  'Push':0,
+                  'Win':1,'Dealer Bust':1,
+                  'Blackjack':self.blackjack}
+        
+        outcomes = []
+        dvalues = []
+        for player in self.players:
+            for hand in player.hands:
+                #Check the result and store all of the details in a record
+                record = {'Simulation Hand Number':h, 'Player ID':player.ID, 'Player Name':player.name, 'Player Role':player.role,
+                          'Player Hand Number':hand['Order'], 'Cards':hand['Cards']}
+                player_sum = calc_sum(hand['Cards'])
+                record['Player Sum'] = player_sum
+                record['Dealer Upcard'] = self.players[-1].hands[0]['Cards'][0]
+                record['Dealer Cards'] = self.players[-1].hands[0]['Cards']
+                dealer_sum = calc_sum(self.players[-1].hands[0]['Cards'])
+                record['Dealer Sum'] = dealer_sum
+                dealer_ncards = len(self.players[-1].hands[0]['Cards'])
+                player_ncards = len(hand['Cards'])
+                
+                if (dealer_sum == 21 and dealer_ncards == 2) and not (player_sum == 21 and player_ncards == 2 and hand['Order']==0):
+                    outcome = 'Dealer Blackjack'
+                elif (player_sum == 21 and player_ncards == 2 and hand['Order']==0) and not (dealer_sum == 21 and dealer_ncards == 2):
+                    outcome = 'Blackjack'
+                elif player_sum > 21:
+                    outcome = 'Bust'
+                elif hand['Action']=='Surrender':
+                    outcome = 'Surrender'
+                elif dealer_sum > 21 and player_sum <= 21:
+                    outcome = 'Dealer Bust'
+                elif dealer_sum <= 21 and player_sum <= 21:
+                    if player_sum > dealer_sum:
+                        outcome = 'Win'
+                    elif dealer_sum > player_sum:
+                        outcome = 'Beat'
+                    elif dealer_sum == player_sum:
+                        outcome = 'Push'
+                    else:
+                        outcome = 'Error'
+                else:
+                    outcome = 'Error'
+                
+                assert outcome != 'Error'
+                
+                record['Double'] = hand['Double']
+                record['Outcome'] = outcome
+                outcomes.append(outcome)
+                
+                dvalue = values[outcome]*(2**hand['Double'])
+                record['dValue'] = dvalue
+                player.bank += dvalue
+                dvalues.append(dvalue)
+                record['Player Bank'] = player.bank
+                
+                if player.role != 'Dealer' and not ignore_record:
+                    self.record_keeper.append(record)
+                
+                #Collect all of the cards into the discard pile
+                for card in hand['Cards']:
+                    self.deck.discard.append(card)
+            player.hands = []
+        return dvalues, outcomes
 
     def score(self):
         #Assemble a table of player statistics from the game's record keeper
-        stats = self.record_keeper[self.record_keeper['Role']!='Dealer']
-        stats = stats.groupby(by=['Player','Result','Double']).size().reset_index(name='Count')
+        stats = self.record_keeper[self.record_keeper['Player Role']!='Dealer']
+        stats = stats.groupby(by=['Player ID','Outcome','Double']).size().reset_index(name='Count')
         stats['Frequency'] = 0
         for p_ in range(1,self.player_count+1):
-            stats.loc[stats['Player']==p_,'Frequency'] = stats.query(f'Player=={p_}').loc[:,'Count']/stats.query(f'Player=={p_}').loc[:,'Count'].sum()
+            stats.loc[stats['Player ID']==p_,'Frequency'] = stats.query(f'`Player ID`=={p_}').loc[:,'Count']/stats.query(f'`Player ID`=={p_}').loc[:,'Count'].sum()
         
         #Calculate house edges per player
         edges = []
         for player in self.players:
             if player.role != 'Dealer':
-                edge = {'Player':player.ID}
-                value = 0
-                player_stats = stats[stats['Player']==player.ID]
-                for index,row in player_stats.iterrows():
-                    if row['Result'] in ['DealerBust','Win']:
-                        value += row['Count']*(2**row['Double'])
-                    elif row['Result'] in ['Bust','Beat']:
-                        value -= row['Count']*(2**row['Double'])
-                    elif row['Result'] == 'Surrender':
-                        value -= 0.5*row['Count']*(2**row['Double'])
-                    elif row['Result'] == 'Blackjack':
-                        value += row['Count']*self.blackjack
+                edge = {'Player ID':player.ID}
+                value = self.record_keeper.query(f'`Player ID`=={player.ID}').iloc[-1,:]['Player Bank']
                 edge['House Edge (%)'] = -(value/self.hands)*100
                 edges.append(edge)
-        edges = pd.DataFrame(edges).set_index('Player')
-        stats = stats.set_index('Player')
+        edges = pd.DataFrame(edges).set_index('Player ID')
+        stats = stats.set_index('Player ID')
 
         return stats, edges
     
-    def decide(self, player, dealer_card, firstaction=False, action=None):
-        #Decide what to do based on player and dealer cards (precedes player.act)
-        #If it's the first deal, or there is an active split to be handled
-        while 'None' in player.actions:
-            for cardset in range(len(player.cards)):
-                #Make a decision for each cardset
-                if firstaction == True and player.role != 'Dealer':
-                    player.actions[cardset] = action
-                    firstaction = False
-                else:
-                    player.actions[cardset] = player.act(dealer_card,cardset)
-                #HIT: Deal one more card
-                while player.actions[cardset] == 'Hit':
-                    self.deal(self.shoe,player,cardset)
-                    player.actions[cardset]  = player.act(dealer_card,cardset)
-                #DOUBLE DOWN: Hit, then stop
-                if player.actions[cardset] == 'Double':
-                    player.double[cardset] = 1
-                    #This will only ever apply to the first 2 cards, no need to worry about splits
-                    self.deal(self.shoe,player,cardset)
-                    player.actions[cardset] = 'Stand'
-                #SURRENDER: Stop
-                if player.actions[cardset] == 'Surrender':
-                    player.surrender[cardset] = 1
-                #SPLIT: Split current cardset into two cardsets
-                if player.actions[cardset] == 'Split':
-                    #Take the second card from the current cardset, add it as a new cardset
-                    player.cards.append([player.cards[cardset][1]])
-                    player.cards[cardset].remove(player.cards[cardset][1])
-                    
-                    #Splitting demands re-evaluation for each card set
-                    player.actions.append('None')
-                    player.actions[cardset] == 'None'
-                    player.surrender.append(0)
-                    player.double.append(0)
-                    max_cardset = len(player.cards)
-                    self.deal(self.shoe,player,cardset)
-                    self.deal(self.shoe,player,max_cardset-1)
-
-        return
-    
-    def value_actions(self, dealer_card, cards, ID, iterations):
+    def value_actions(self, upcard, cards, ID, iterations):
         #Determine the expected value for an action given the player and dealer cards through simulation 
-        actions = ['Hit','Stand','Double']
-        if cards[0][1]==cards[1][1]:
-            actions.append('Split')
-                      
-        #Use the selected player's actions for anything that follow the first, fixed action (i.e. in case of split or re-hit)
+        test_actions = ['Hit','Stand','Double']
+        if cards[0]==cards[1]:
+            test_actions.append('Split')
+        #Use the selected player's test_actions for anything that follow the first, fixed action (i.e. in case of split or re-hit)
         test_players = [self.players[ID-1], self.players[-1]]
        
         #Use dealer strategy after first action
-        test_players[0].hard_strategy = test_players[1].hard_strategy
-        test_players[0].soft_strategy = test_players[1].soft_strategy
-        test_players[0].split_strategy = test_players[1].split_strategy
+        test_players[0].strat_hard = test_players[1].strat_hard
+        test_players[0].strat_soft = test_players[1].strat_soft
+        test_players[0].strat_split = test_players[1].strat_split
        
         values = {}
         results = {}
         summary = {}
-        for action in actions:
+        for action in test_actions:
             values[action] = [] #Collect a list of results, and we'll get mean and var from Numpy later
             summary[action] = {}
             results[action] = []
         
         optimizer_prog = st.progress(0)
-        for action in actions:
-            multiplier = actions.index(action)
+        for action in test_actions:
+            multiplier = test_actions.index(action)
             for i_ in range(iterations):
                 optimizer_prog.progress((iterations*multiplier+i_++1)/(iterations*4))               
- 
-                
-                #NOTE: ISSUE MAY HAVE BEEN THAT YOU WERE REMOVING THE FIRST INSTANCE OF THE MATCHING CARD
-                
-                # #Remove the chosen cards from the shoe
-                # card_values_remove = [cards[0][1], cards[1][1], dealer_card[1]]
-                # for card_value in card_values_remove:
-                #     i=0
-                #     while self.shoe.cards[i][1] != card_value:
-                #         i+=1
-                #     self.shoe.cards.remove(self.shoe.cards[i])
-
                 #Give the chosen cards out
-                for card in cards:
-                    test_players[0].cards[0].append(card) 
+                test_players[0].hands.append({'Order':0,'Cards':cards.copy(),'Action':action,'Double':False})
                 
-                self.players[-1].cards[0].append(dealer_card)
-                self.deal(self.shoe,self.players[-1],0)
-                
-                player_sum = test_players[0].calc_sum(0)
-                
-                for player in test_players:
-                    #Reset the flag for double down and reset the player decision
-                    player.double = 0
-                    player.surrender = [0]
-                    player.actions = ['None']
-                    self.decide(player, dealer_card, firstaction = True, action = action)
+                test_players[-1].hands.append({'Order':0,'Cards':[],'Action':None,'Double':False})
+                test_players[-1].hands[0]['Cards'].append(upcard)
+                self.deck.deal(test_players[-1].hands[0])
 
-                dealer_sum = test_players[1].calc_sum(0) 
-                for cardset in range(len(test_players[0].cards)):
-                    dvalue, result = self.resolve(test_players[0],cardset,dealer_sum)
-                    values[action].append(dvalue)
-                    results[action].append(result)
-                    
+                player_sum = calc_sum(test_players[0].hands[0]['Cards'])
+
+                #Need to correct for dealer blackjack
                 for player in test_players:
-                    player.cards = [[]]
-                self.shoe = shoe(self.decks_per_shoe)
-                self.shoe.shuffle()
-                
+                    if player.hands[0]['Action'] is None:
+                        actions = player.decide(upcard)
+                    else:
+                        actions = [action]
+                    while not all(item in ['Stand','Surrender'] for item in actions):
+                        self.act(player,actions)
+                        actions = player.decide(upcard)
+                        
+                #Last Step:
+                dvalues, outcomes = self.resolve(i_, ignore_record=True)
+
+                values[action].append(dvalues[0])
+                results[action].append(outcomes[0])
+
+                self.deck = Deck(self.decks_per_shoe)
+            
             summary[action]['Mean'] = np.mean(np.array(values[action]))
             summary[action]['Variance'] = np.var(np.array(values[action]))
             results[action] = pd.Series(results[action])
             results[action] = results[action].groupby(results[action]).size()/len(results[action]) #Convert list of actions to a value-grouped Pd Series
         
         results = pd.DataFrame(results).reset_index()
-        results = pd.melt(results, id_vars = 'index', value_vars=actions)
+        results = pd.melt(results, id_vars = 'index', value_vars=test_actions)
         results = results.rename(columns={"index": "Outcome", "variable": "First Action", "value":"Frequency"})
         
         summary = pd.DataFrame(summary)
         optimizer_prog.empty()
         return summary, values, results
-
-    def play(self):        
-        self.record_keeper = []
-        #Repeat the steps for N hands in the simulation
-        sim_prog = st.progress(0)
-        for hand in range(self.hands):  
-            sim_prog.progress((hand+1)/self.hands)
-            #STEP 1: Shuffle and deal cards if the cut card is passed
-            if len(self.shoe.bin)>self.cut_in*52:
-                self.shoe.shuffle()
-            
-            #STEP 2: Deal 2 cards to each player, one at a time, dealer last
-            for card in range(2):
-                for player in self.players:
-                    self.deal(self.shoe,player,0) 
-                    #Reset the flag for double down and reset the player decision
-                    player.double = [0]
-                    player.surrender = [0]
-                    player.actions = ['None']
-            
-            #STEP 3: "Announce" the dealer upcard, the first card dealt to the dealer
-            dealer_card = self.players[-1].cards[0][0]
-            
-            #STEP 4: Each player, dealer last, decides what to do with their hand
-            for player in self.players:
-                self.decide(player, dealer_card)
-            
-            #STEP 5: Determine whether each player won or lost and how
-            dealer_sum = self.players[-1].calc_sum(0)
-            for player in self.players[:-1]:
-                for cardset in range(len(player.cards)):
-                    dvalue, result = self.resolve(player,cardset,dealer_sum)
-                    player.value += dvalue
-                    record = {'Hand':hand,'Cardset':cardset, 'Player':player.ID, 'Role':player.role, 'Value':player.value,
-                              'PlayerCards':copy.deepcopy(player.cards), 'DealerUpcard':dealer_card,
-                              'Dealer Cards':copy.deepcopy(self.players[-1].cards), 'DealerSum':dealer_sum,
-                              'dValue':dvalue, 'Player Sum': player.calc_sum(cardset)}
-                    record['Result'] = result
-                    record['Double'] = (player.double[cardset]==1)
-                    #Add the record of this hand/player to the record keeper
-                    self.record_keeper.append(record)
-                    
-            #STEP 6: Collect the cards from each player and put them in the discard pile
-            self.collect()
-            
-        #Once all of the hands have been dealt and resolved, reformat the record keeper
-        sim_prog.empty()
-        self.record_keeper = pd.DataFrame(self.record_keeper)
-        return
-
+                
 def batch_means(game,batch_size):
     #Assembles a figure for the probability mass function (PMF) of bet outcomes
     #and a corresponding cumulative distribution function (CDF)
@@ -488,8 +417,8 @@ def batch_means(game,batch_size):
     value_set = set()
 
     for p_,player in enumerate(game.players[:-1]):
-        run_p.append(records[(records['Player']==player.ID)&(records['Hand']%batch_size==0)][['Hand','Player','Value']])
-        run_p[p_]['dV'] = run_p[p_]['Value'] - run_p[p_].shift(1)['Value']
+        run_p.append(records[(records['Player ID']==player.ID)&(records['Simulation Hand Number']%batch_size==0)][['Simulation Hand Number','Player ID','Player Bank']])
+        run_p[p_]['dV'] = run_p[p_]['Player Bank'] - run_p[p_].shift(1)['Player Bank']
         run_p[p_] = run_p[p_].dropna()
         pdf_p.append(run_p[p_].groupby(by=['dV']).size().reset_index(name='Freq'))
         batches = len(run_p[p_].index)
@@ -510,7 +439,7 @@ def batch_means(game,batch_size):
         batch_means.append(run_p[p_]['dV'].mean())
         batch_vars.append(run_p[p_]['dV'].var())
         
-        label = f'Player {player.ID}'
+        label = player.name
         dist_data.append(run_p[p_]['dV'])
         dist_labels.append(label)
         
@@ -532,9 +461,9 @@ def val_over_time(game):
     records = game.record_keeper
     fig = go.Figure()
     for player in game.players[:-1]:
-        run_p = records[(records['Player']==player.ID)][['Hand','Player','Value']]
-        label = f'Player {player.ID}'
-        fig.add_trace(go.Scatter(x=run_p['Hand'],y=run_p['Value'],name=label))
+        run_p = records[(records['Player ID']==player.ID)][['Simulation Hand Number','Player ID','Player Bank']]
+        label = player.name
+        fig.add_trace(go.Scatter(x=run_p['Simulation Hand Number'],y=run_p['Player Bank'],name=label))
     fig.update_xaxes(title_text='Hand No.')
     fig.update_yaxes(title_text='Net Number of Bets Won')
     fig.update_layout(title_text=f'Player Value over Simulation ')
@@ -542,23 +471,20 @@ def val_over_time(game):
 
 def card_heatmap(game, player_ID):
     #Creates a heatmap of realized card values for a particular player in the game
-    all_records = game.record_keeper.set_index('Player')
+    all_records = game.record_keeper.set_index('Player ID')
     record_p = all_records.loc[player_ID]
-    record_p['Cards_in_Set'] = record_p.apply(lambda x: list(x['PlayerCards'])[x['Cardset']], axis=1)
-    record_p['Card1'] = record_p.apply(lambda x: x['Cards_in_Set'][0][1], axis=1)
-    record_p['Card2'] = record_p.apply(lambda x: x['Cards_in_Set'][1][1], axis=1)
-    record_p['Dealer'] = record_p['DealerUpcard'].apply(lambda x: x[1])
-    record_p = record_p[['Result','Double','Dealer','Card1','Card2']].reset_index(drop=True)
+    record_p['Card1'] = record_p.apply(lambda x: x['Cards'][0], axis=1)
+    record_p['Card2'] = record_p.apply(lambda x: x['Cards'][1], axis=1)
+    record_p['Dealer'] = record_p['Dealer Upcard']
+    record_p['Value'] = record_p['dValue']
+    record_p = record_p[['Outcome','Double','Dealer','Card1','Card2','Value']].reset_index(drop=True)
 
-    #Assign value for each hand, IGNORING DOUBLES
-    win_rules = {'DealerBust':1,'Win':1,'Bust':-1,'Beat':-1,'Surrender':-0.5,'Blackjack':game.blackjack,'Push':0}
-    record_p['Value'] = record_p.apply(lambda x: win_rules[x['Result']],axis=1)
     
     #Aggregate data for hard-totals (no aces, one cardset at a time)
     hards = record_p[-((record_p['Card1']==11)^(record_p['Card2']==11))]
     hards['HardTotal'] = record_p['Card1']+record_p['Card2']
     #If the player isn't splitting, double aces will show up; don't report this as 22
-    if game.players[player_ID-1].split_strategy is not None:
+    if game.players[player_ID-1].strat['Split'] == 1:
         hards.loc[hards['HardTotal']==22,'HardTotal']=12
     hards = hards.groupby(by=['Dealer','HardTotal']).agg({'Value':'mean','Dealer':'count'}).rename(columns={'Value':'AvgValue','Dealer':'Count'}).reset_index()
     #Filter out any significantly under-represented values
@@ -592,4 +518,6 @@ def card_heatmap(game, player_ID):
     fig_soft.update_xaxes(side='top')
     fig_soft.update_yaxes(title_text='Dealer UpCard')
     
-    return fig_hard, fig_soft
+    return fig_hard, fig_soft    
+    
+    
