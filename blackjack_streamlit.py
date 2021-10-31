@@ -87,11 +87,11 @@ options['player_names'] = []
 player_strats = st.sidebar.expander('Player Strategies')
 with player_strats:
     for p_ in range(options['player_count']):
-        st.subheader(f'Player {p_+1}')
+        st.subheader(f'{options['player_names'][p_]}')
         custom_strat = player_strats.checkbox('Custom?', value=0, key=str(p_)+'strat_custom',
                                           help ='Check if you want to upload a custom strategy')
         options['player_strat'].append({})
-        options['player_names'].append(player_strats.text_input('Name', value=f'Player{p_+1}', key=str(p_)+'name'))
+        options['player_names'].append(player_strats.text_input('Name', value=f'{options['player_names'][p_]}', key=str(p_)+'name'))
         if custom_strat:
             #Show example file
             data = open('Strategies/strategy_custom_example.xlsx', 'rb').read()
@@ -158,21 +158,21 @@ if 'my_game' in vars():
         st.write(edges)
         statscols = st.columns(options['player_count'])
         for p_ in range(options['player_count']):
-            statscols[p_].write(f'Summary Statistics for Player {p_+1}')
+            statscols[p_].write(f'Summary Statistics for {options['player_names'][p_]}')
             statscols[p_].write(stats.loc[p_+1])
             
         fig_stats = go.Figure()
         for p_ in range(options['player_count']):
             player_stats = stats.loc[p_+1]
             player_stats['Double Label'] = np.where(player_stats['Double']==True,'Double','Standard')
-            fig_stats.add_trace(go.Bar(x=player_stats['Outcome'],y=player_stats['Frequency'],name=f'Player {p_+1}',text = player_stats['Double Label']))
+            fig_stats.add_trace(go.Bar(x=player_stats['Outcome'],y=player_stats['Frequency'],name=f'{options['player_names'][p_]}',text = player_stats['Double Label']))
         fig_stats.update_xaxes(title_text='Outcome')
         fig_stats.update_yaxes(title_text='Frequency')
         fig_stats.update_layout(title_text='Comparison of Player Outcomes')
         st.plotly_chart(fig_stats, use_container_width=True)
         
         for p_ in range(options['player_count']):
-            st.write(f'Realized Card Values for Player {p_+1}')
+            st.write(f'Realized Card Values for Player {options['player_names'][p_]}')
             fig_hard, fig_soft = card_heatmap(my_game, p_+1)
             heatmap_cols = st.columns(2)
             with heatmap_cols[0]:
