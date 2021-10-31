@@ -87,7 +87,7 @@ options['player_names'] = []
 player_strats = st.sidebar.expander('Player Strategies')
 with player_strats:
     for p_ in range(options['player_count']):
-        st.subheader(f"{options['player_names'][p_]}")
+        st.subheader(f"Player {p_}")
         custom_strat = player_strats.checkbox('Custom?', value=0, key=str(p_)+'strat_custom',
                                           help ='Check if you want to upload a custom strategy')
         options['player_strat'].append({})
