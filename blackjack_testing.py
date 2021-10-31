@@ -8,20 +8,14 @@ from blackjack_project import *
 import plotly 
 
 random.seed('6644')
-options = {'hands':1000,
-            'player_count':6,
-            'player_names':['Dealer Mimetic','Hard Only','Optimal No Splits','Full Optimal','Double Allowed','Surrender ALlowed'],
-            'player_strat':[{'Hard':0, 'Soft':0, 'Split': 0, 'Double':0, 'Surrender':0},
-                            {'Hard':1, 'Soft':0, 'Split': 0, 'Double':0, 'Surrender':0},
-                            {'Hard':1, 'Soft':1, 'Split': 0, 'Double':0, 'Surrender':0},
-                            {'Hard':1, 'Soft':1, 'Split': 1, 'Double':0, 'Surrender':0},
-                            {'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':0},
-                            {'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
-            'decks_per_shoe':8,
-            'cut_in':1,
-            #'blackjack':1,
-            'blackjack':3/2,
-            'H17':1}
+options = {'hands':10000,
+            'player_count':2,
+            'player_names':['Optimal','Custom'],
+            'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1},
+                            {'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1, 'Custom':'Strategies/strategy_custom_example.xlsx'}],
+            'decks_per_shoe':8, 'cut_in':1,
+            'blackjack':3/2, 'H17':1,
+            'DDAS':1, 'HitAASplit':1, 'ResplitAA':1, 'MaxSplits':3}
 
 test_game = Game(options)
 test_game.play()

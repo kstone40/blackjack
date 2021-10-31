@@ -80,17 +80,22 @@ class Deck:
         return
 
 class Player:
-    def __init__(self,ID,role,name,strat,H17):
+    def __init__(self,ID,role,name,strat,game_rules):
         #Store basic information
         self.ID = ID
         self.role = role
         self.name = name
         self.strat = strat
-        self.H17 = H17
+        
+        for rule in game_rules.keys():
+            setattr(self, rule, game_rules[rule])
         
         self.hands=[]
         self.bank = 0
-        self.strat_hard, self.strat_soft, self.strat_split = strat_loader(self.role,H17,strat['Hard'],strat['Soft'],strat['Split'])
+        custom_path = None
+        if 'Custom' in strat.keys():
+            custom_path = strat['Custom']
+        self.strat_hard, self.strat_soft, self.strat_split = strat_loader(self.role,self.H17,strat['Hard'],strat['Soft'],strat['Split'],custom_path)
         return
     
     def decide(self,upcard):
@@ -100,12 +105,13 @@ class Player:
                 action = None
                 cards = hand['Cards']
                 player_sum = calc_sum(cards)
+                
                 #Special rules
-                max_splits = 3
-                DAS = 1 #Double after split
+                max_splits = self.MaxSplits
+                DDAS = self.DDAS #Double after split
                 
                 allow_double = True
-                if not DAS and len(self.hands)>1:
+                if not DDAS and len(self.hands)>1:
                     allow_double = False
                 if len(cards)>2:
                     allow_double = False
@@ -120,6 +126,8 @@ class Player:
                 
                 allow_split = True
                 if len(self.hands)>max_splits:
+                    allow_split = False
+                if cards[0]==11 and hand['Order']>0 and not self.ResplitAA: #If resplitting aces is not allowed
                     allow_split = False
                 
 
@@ -174,12 +182,15 @@ class Game:
         self.record_keeper = []
         self.house_bank= 0
         
+        rules_to_extract = ['H17','DDAS','HitAASplit','ResplitAA','MaxSplits']
+        game_rules = {rule: options[rule] for rule in rules_to_extract}
+        
         #Generate each player, with given strategy, as required
         self.players = []
         for p_ in range(self.player_count):
-            self.players.append(Player(p_+1,'Guest',self.player_names[p_],self.player_strat[p_],self.H17))
+            self.players.append(Player(p_+1,'Guest',self.player_names[p_],self.player_strat[p_],game_rules))
             
-        self.players.append(Player(self.player_count+1,'Dealer','Dale',{'Hard':0,'Soft':0,'Split':0,'Double':0,'Surrender':0},self.H17))
+        self.players.append(Player(self.player_count+1,'Dealer','Dale',{'Hard':0,'Soft':0,'Split':0,'Double':0,'Surrender':0},game_rules))
             
         #Generate the shoe
         self.deck = Deck(self.decks_per_shoe)
@@ -241,9 +252,9 @@ class Game:
                 player.hands[h]['Cards'].pop(0)
                 self.deck.deal(player.hands[h])
                 self.deck.deal(player.hands[-1])
-                # if player.hands[h]['Cards'][0]==11: #Can't re-hit split aces
-                #     player.hands[-1]['Action'] = 'Stand'
-                #     player.hands[h]['Action'] = 'Stand'
+                if player.hands[h]['Cards'][0]==11 and not self.HitAASplit: #If we can't re-hit split aces
+                    player.hands[-1]['Action'] = 'Stand'
+                    player.hands[h]['Action'] = 'Stand'
         return
     
     def resolve(self, h, ignore_record=False):

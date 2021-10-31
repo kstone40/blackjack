@@ -12,14 +12,13 @@ import plotly
 
 #Set up a game class
 random.seed('6644')
-options = {'hands':10,
+options = {'hands':100,
             'player_count':1,
-            'player_names':['Kevin'],
+            'player_names':['Optimal'],
             'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
-            'decks_per_shoe':6,
-            'cut_in':4,
-            'blackjack':3/2,
-            'H17':1}
+            'decks_per_shoe':8, 'cut_in':1,
+            'blackjack':3/2, 'H17':1,
+            'DDAS':1, 'HitAASplit':1, 'ResplitAA':1, 'MaxSplits':3}
 my_game = Game(options)
 my_game.play()
 
@@ -27,7 +26,7 @@ my_game.play()
 dealer_strat_hard = my_game.players[-1].strat_hard
 dealer_strat_soft = my_game.players[-1].strat_soft
 
-iterations = 5000
+iterations = 10
 
 def record_actions(first_cards, second_card_ranges, strategy):
     #Strategy is 'hard' 'soft' or 'split'
