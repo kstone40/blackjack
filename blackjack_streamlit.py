@@ -122,7 +122,7 @@ with player_strats:
         
 @st.cache(allow_output_mutation=True)
 def set_game(options):
-    my_game = game(options)
+    my_game = Game(options)
     global cache_miss
     cache_miss = True
     return my_game
