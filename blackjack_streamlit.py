@@ -91,7 +91,7 @@ with player_strats:
         custom_strat = player_strats.checkbox('Custom?', value=0, key=str(p_)+'strat_custom',
                                           help ='Check if you want to upload a custom strategy')
         options['player_strat'].append({})
-        options['player_names'].append(player_strats.text_input('Name', value=f"Player [p_+1]}", key=str(p_)+'name'))
+        options['player_names'].append(player_strats.text_input('Name', value=f"Player {p_+1}", key=str(p_)+'name'))
         if custom_strat:
             #Show example file
             data = open('Strategies/strategy_custom_example.xlsx', 'rb').read()
