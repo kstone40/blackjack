@@ -32,7 +32,7 @@ options = {'hands':1000000,
             #                 {'Hard':1, 'Soft':1, 'Split': 1, 'Double':0, 'Surrender':0},
             #                 {'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':0},
             #                 {'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
-            'decks_per_shoe':12, 'cut_in':1,
+            'decks_per_shoe':6, 'cut_in':4,
             'blackjack':1.5, 'H17':1,
             'DDAS':1, 'HitAASplit':1, 'ResplitAA':1, 'MaxSplits':3}
 
