@@ -17,7 +17,7 @@ options = {'hands':100,
             'player_names':['Optimal'],
             'player_strat':[{'Hard':1, 'Soft':1, 'Split': 1, 'Double':1, 'Surrender':1}],
             'decks_per_shoe':8, 'cut_in':1,
-            'blackjack':3/2, 'H17':0,
+            'blackjack':3/2, 'H17':1,
             'DDAS':1, 'HitAASplit':1, 'ResplitAA':1, 'MaxSplits':3}
 my_game = Game(options)
 my_game.play()
@@ -26,7 +26,7 @@ my_game.play()
 dealer_strat_hard = my_game.players[-1].strat_hard
 dealer_strat_soft = my_game.players[-1].strat_soft
 
-iterations = 5000
+iterations = 10000
 
 def record_actions(first_cards, second_card_ranges, strategy):
     #Strategy is 'hard' 'soft' or 'split'
@@ -119,7 +119,7 @@ for type_i in type_list:
                                           y=all_comp_short[type_i],
                                           x=all_comp_short['Dealer'],
                                           zmin = 0,
-                                          zmax = 0.0015,
+                                          zmax = 0.001,
                                           colorscale = 'GnBu',
                                           colorbar = {'title':'Value'}))
     
