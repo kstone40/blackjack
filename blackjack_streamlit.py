@@ -113,8 +113,8 @@ with player_strats:
                 custom_file = pd.ExcelFile('Strategies/strategy_custom_example.xlsx')
             custom_dfs = {}
             custom_dfs['Hard'] = pd.read_excel(custom_file, 'hard').set_index('Player')
-            custom_dfs['Soft'] = pd.read_excel(custom_file, 'hard').set_index('Player')
-            custom_dfs['Split'] = pd.read_excel(custom_file, 'hard').set_index('Player')            
+            custom_dfs['Soft'] = pd.read_excel(custom_file, 'soft').set_index('Player')
+            custom_dfs['Split'] = pd.read_excel(custom_file, 'split').set_index('Player')            
             options['player_strat'][p_]['Custom'] = custom_dfs
             options['player_strat'][p_]['Hard'] = 1
             options['player_strat'][p_]['Soft'] = 1
