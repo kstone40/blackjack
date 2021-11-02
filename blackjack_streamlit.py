@@ -23,7 +23,7 @@ st.set_page_config(page_title='Blackjack Strategy Simulator',layout='wide')
 #Title
 st.title('Blackjack Strategy Simulator')
 st.write('v1.2, Nov 2021')
-st.markdown("""Created by <a href="https://www.linkedin.com/in/kevinedwardstone/">Kevin Stone</a>""", unsafe_allow_html=True)
+st.markdown("""Created by <a href="https://www.linkedin.com/in/kevinedwardstone/" target="_blank">Kevin Stone</a>""", unsafe_allow_html=True)
 
 st.subheader('First, consider reviewing the fundamentals below.')
 
