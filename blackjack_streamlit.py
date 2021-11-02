@@ -108,9 +108,9 @@ with player_strats:
             st.markdown(href, unsafe_allow_html=True)
             uploaded_file = player_strats.file_uploader('Choose a file', key=str(p_))
             if uploaded_file is not None:
-                options['player_strat'][p_]['Custom'] = uploaded_file.name
+                options['player_strat'][p_]['Custom'] = pd.ExcelFile(uploaded_file)
             if uploaded_file is None:
-                options['player_strat'][p_]['Custom'] = 'Strategies/strategy_custom_example.xlsx'
+                options['player_strat'][p_]['Custom'] = pd.ExcelFile('Strategies/strategy_custom_example.xlsx')
             options['player_strat'][p_]['Hard'] = 1
             options['player_strat'][p_]['Soft'] = 1
             options['player_strat'][p_]['Split'] = 1  
