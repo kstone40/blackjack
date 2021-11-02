@@ -518,7 +518,7 @@ def card_heatmap(game, player_ID):
                                       y = hards['Dealer'],
                                       zmin = -1,
                                       zmax = 1.5,
-                                      colorscale = 'Electric',
+                                      colorscale = 'RdBu',
                                       colorbar = {'title':'Average Hand Value'}))
     fig_hard.update_xaxes(title_text='Player Hard Total')
     fig_hard.update_xaxes(side='top')
