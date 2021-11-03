@@ -7,10 +7,7 @@ for GATech ISyE6644 Fall 2021 Course Project
 
 import pandas as pd
 import random
-import copy
-import time
 import plotly.graph_objects as go
-import plotly.figure_factory as ff
 import numpy as np
 import streamlit as st
 

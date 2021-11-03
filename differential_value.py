@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Oct 23 16:42:08 2021
-
-@author: kevin
+@author: Kevin Stone
+Simulation and analysis of Blackjack strategies
+for GATech ISyE6644 Fall 2021 Course Project
 """
 from blackjack_project import *
 import plotly.figure_factory as ff

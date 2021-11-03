@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct 29 19:29:10 2021
-
-@author: kevin
+@author: Kevin Stone
+Simulation and analysis of Blackjack strategies
+for GATech ISyE6644 Fall 2021 Course Project
 """
 from blackjack_project import *
 import plotly 
@@ -40,7 +40,7 @@ test_game = Game(options)
 test_game.play()
 records = test_game.record_keeper
 stats, edges = test_game.score()
-batch_means_results, batch_vars, fig_pmf, fig_ecdf = batch_means(test_game,100)
+batch_means_results, batch_vars, fig_pmf, fig_ecdf = batch_means(test_game,20)
 # plotly.offline.plot(fig_ecdf)
 # plotly.offline.plot(fig_pmf)
 
