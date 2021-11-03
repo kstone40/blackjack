@@ -14,8 +14,7 @@ import plotly.figure_factory as ff
 import numpy as np
 import streamlit as st
 
-def strat_loader(role,H17,hard=0,soft=0,split=0,custom_path=None):
-    assert type(custom_path) is str or custom_path == None
+def strat_loader(role,H17,hard=0,soft=0,split=0,custom_dfs=None):
     #Load in dealer and optimal strategies for the two major variations
     if H17:
         HS17 = 'H'
@@ -28,11 +27,10 @@ def strat_loader(role,H17,hard=0,soft=0,split=0,custom_path=None):
         hard_strategy = pd.read_excel(dealer_strat, 'hard').set_index('Player')
         soft_strategy = pd.read_excel(dealer_strat, 'soft').set_index('Player')
         split_strategy = pd.read_excel(dealer_strat, 'split').set_index('Player')
-    if custom_path is not None:
-        custom_strat = pd.ExcelFile(custom_path)
-        hard_strategy = pd.read_excel(custom_strat, 'hard').set_index('Player')
-        soft_strategy = pd.read_excel(custom_strat, 'soft').set_index('Player')
-        split_strategy = pd.read_excel(custom_strat, 'split').set_index('Player')
+    if custom_dfs is not None:
+        hard_strategy = custom_dfs['Hard']
+        soft_strategy = custom_dfs['Soft']
+        split_strategy = custom_dfs['Split']
     else:
         if hard:
             hard_strategy = pd.read_excel(optimal_strat, 'hard').set_index('Player')      
@@ -98,10 +96,10 @@ class Player:
         
         self.hands=[]
         self.bank = 0
-        custom_path = None
+        custom_dfs = None
         if 'Custom' in strat.keys():
-            custom_path = strat['Custom']
-        self.strat_hard, self.strat_soft, self.strat_split = strat_loader(self.role,self.H17,strat['Hard'],strat['Soft'],strat['Split'],custom_path)
+            custom_dfs = strat['Custom']
+        self.strat_hard, self.strat_soft, self.strat_split = strat_loader(self.role,self.H17,strat['Hard'],strat['Soft'],strat['Split'],custom_dfs)
         return
     
     def decide(self,upcard):
@@ -571,7 +569,7 @@ def card_heatmap(game, player_ID):
                                       y = hards['Dealer'],
                                       zmin = -1,
                                       zmax = 1.5,
-                                      colorscale = 'Electric',
+                                      colorscale = 'RdBu',
                                       colorbar = {'title':'Average Hand Value'}))
     fig_hard.update_xaxes(title_text='Player Hard Total')
     fig_hard.update_xaxes(side='top')
@@ -583,7 +581,7 @@ def card_heatmap(game, player_ID):
                                       y = softs['Dealer'],
                                       zmin = -1,
                                       zmax = 1.5,
-                                      colorscale = 'Electric',
+                                      colorscale = 'RdBu',
                                       colorbar = {'title':'Average Hand Value'}))
     fig_soft.update_xaxes(title_text='Player Non-Ace Card in Soft Hand')
     fig_soft.update_xaxes(side='top')

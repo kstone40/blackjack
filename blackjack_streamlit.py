@@ -22,7 +22,8 @@ st.set_page_config(page_title='Blackjack Strategy Simulator',layout='wide')
 #Main page output
 #Title
 st.title('Blackjack Strategy Simulator')
-st.write('v1.0, Sep 2021, Kevin Stone')
+st.write('v1.2, Nov 2021')
+st.markdown("""Created by <a href="https://www.linkedin.com/in/kevinedwardstone/" target="_blank">Kevin Stone</a>""", unsafe_allow_html=True)
 
 st.subheader('First, consider reviewing the fundamentals below.')
 
@@ -108,11 +109,17 @@ with player_strats:
             st.markdown(href, unsafe_allow_html=True)
             uploaded_file = player_strats.file_uploader('Choose a file', key=str(p_))
             if uploaded_file is not None:
-                options['player_strat'][p_]['Special'] = 'Custom'
-                options['player_strat'][p_]['Path'] = uploaded_file.name
+                custom_file = pd.ExcelFile(uploaded_file)
             if uploaded_file is None:
-                options['player_strat'][p_]['Special'] = 'Custom'
-                options['player_strat'][p_]['Path'] = 'Strategies/strategy_custom_example.xlsx'
+                custom_file = pd.ExcelFile('Strategies/strategy_custom_example.xlsx')
+            custom_dfs = {}
+            custom_dfs['Hard'] = pd.read_excel(custom_file, 'hard').set_index('Player')
+            custom_dfs['Soft'] = pd.read_excel(custom_file, 'soft').set_index('Player')
+            custom_dfs['Split'] = pd.read_excel(custom_file, 'split').set_index('Player')            
+            options['player_strat'][p_]['Custom'] = custom_dfs
+            options['player_strat'][p_]['Hard'] = 1
+            options['player_strat'][p_]['Soft'] = 1
+            options['player_strat'][p_]['Split'] = 1  
         else:        
             choices = ['None/Dealer','Optimal']
             hard_strat = player_strats.selectbox('Hard-Total Strategy',choices,index=1,help='Select a strategy to test',key=str(p_)+'strat_hard')
@@ -180,7 +187,7 @@ if 'my_game' in vars():
         st.plotly_chart(fig_stats, use_container_width=True)
         
         for p_ in range(options['player_count']):
-            st.write(f"Realized Card Values for Player {options['player_names'][p_]}")
+            st.write(f"Realized Card Values for {options['player_names'][p_]}")
             fig_hard, fig_soft = card_heatmap(my_game, p_+1)
             heatmap_cols = st.columns(2)
             with heatmap_cols[0]:
