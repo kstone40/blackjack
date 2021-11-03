@@ -49,6 +49,12 @@ def strat_loader(role,H17,hard=0,soft=0,split=0,custom_path=None):
     return (hard_strategy, soft_strategy, split_strategy)
 
 def calc_sum(cards):
+    '''
+    Calculates the sum of cards for a hand of Blackjack, prior to making a strategy-informed decision
+    
+    Input: List of integers, "cards"
+    Output: Integer "cardsum"
+    '''
     cardsum = sum(cards)
     ace_high = cards.count(11)
     while cardsum > 21 and ace_high > 0:
@@ -99,59 +105,72 @@ class Player:
         return
     
     def decide(self,upcard):
+        '''
+        Simulate the decision process for a player based on various rules of the game, player's cards, the dealer's showing card,
+        and player's assigned strategies
+        
+        This logic applies to both standard "players" and dealers
+        
+        Input: Dealer "upcard", an integer. Player cards inherited from self Player object
+        Output: List of strings "actions" (e.g. ["Hit","Stand"]) with an element for each hand in the player's set
+        '''
         actions = []
         for hand in self.hands:           
             if hand['Action'] not in ['Stand','Surrender']:
+                #Initialize logic and localize values
                 action = None
                 cards = hand['Cards']
                 player_sum = calc_sum(cards)
-                
-                #Special rules
-                max_splits = self.MaxSplits
-                DDAS = self.DDAS #Double after split
-                
+
                 allow_double = True
-                if not DDAS and len(self.hands)>1:
-                    allow_double = False
-                if len(cards)>2:
-                    allow_double = False
-                if not self.strat['Double']:
+                allow_surrender = True
+                allow_split = True
+                
+                #Disable double-down as appropriate
+                #DD never available after 2 cards in hand
+                #DDAS = double-down after split
+                if (not self.DDAS and len(self.hands)>1) or len(cards)>2 or not self.strat['Double']:
                     allow_double = False
                     
-                allow_surrender = True
-                if not self.strat['Surrender']:
-                    allow_surrender = False
-                if len(cards)>2  or len(self.hands)>1: #Late surrender
+                #Disable surrender as appropriate
+                #Surr never available after 2 cards in hand, or on split hands
+                if not self.strat['Surrender'] or len(cards)>2  or len(self.hands)>1:
                     allow_surrender = False
                 
-                allow_split = True
-                if len(self.hands)>max_splits:
-                    allow_split = False
-                if cards[0]==11 and hand['Order']>0 and not self.ResplitAA: #If resplitting aces is not allowed
+                #Disable splits as appropriate
+                #Split never available after 2 cards in hand
+                #ResplitAA = resplitting aces after an initial Ace-Ace split 
+                #MaxSplits = maximum simultaneous extra hands from split
+                if len(self.hands)>self.MaxSplits or (cards[0]==11 and hand['Order']>0 and not self.ResplitAA) or len(cards)>2:
                     allow_split = False
                 
-
-                if len(cards)==2 and cards[0]==cards[1] and allow_split:
+                #First, check to see if a split is available, then draw from the split strategy
+                if cards[0]==cards[1] and allow_split:
                     action = self.strat_split.loc[cards[0], f'Dealer{upcard}']
+                #Next, check for applicability of soft sum strategy
                 elif 11 in cards:
+                    #Temporarily remove the soft Ace before calculating sum
                     ace_index = cards.index(11)
                     cards.remove(11)
+                    #Treat all other aces as hard 1s (two soft Aces exceed 21)
                     ace_count = cards.count(11)
                     soft_sum = sum(cards)
                     soft_sum -= 10*ace_count
                     if soft_sum < 10:
                         action = self.strat_soft.loc[soft_sum, f'Dealer{upcard}']
                     cards.insert(ace_index,11)
-                    
+                
+                #If the split or soft strategy didn't apply or returned a non-value, lookup hard strategy
                 if action in [None, 'No Split'] and player_sum <= 21:
                     action = self.strat_hard.loc[player_sum, f'Dealer{upcard}']
-                    
+                
+                #When the sum busts 21, return Stand as the action
                 if action == None and player_sum >= 21:
                     action = 'Stand'
-                              
+                
+                #If any conditional actions have been returned, process the conditionals based on available rules
                 action_replacements = {'DoubleH':'Hit','DoubleS':'Stand','SurrenderH':'Hit','SurrenderS':'Stand',
                                        'SplitH':'Hit','SurrenderSplit':'Split'}
-                
                 if 'Double' in action:
                     if not allow_double:
                         action = action_replacements[action]
@@ -197,18 +216,24 @@ class Game:
         return
     
     def play(self):
+        '''
+        Executes the high-level logic for an extended game of Blackjack
+
+        Input: None, inherits necessary traits from Game class
+        Output: None, calls function to record hand results which are stored in Game class attribute        
+        '''
         sim_prog = st.progress(0)
         for h in range(self.hands):
-            if (h+1)%1000==0:
+            if (h+1)%10000==0:
                 print(f'Hand # {h+1}')
             #Repeat these steps every hand
             sim_prog.progress((h+1)/self.hands)
             
-            #Step 1: Shuffle if necessary
+            #Step 1: Shuffle if necessary (past the cut-in card)
             if len(self.deck.discard)>self.cut_in*52:
                 self.deck.shuffle()
                 
-            #Step 2: Dealer two cards to each player, dealer last each time
+            #Step 2: Dealer two cards to each player, dealer last, one at a time
             for player in self.players:
                 player.hands.append({'Order':0,'Cards':[],'Action':None,'Double':False})
             for initial_card in range(2):
@@ -223,28 +248,38 @@ class Game:
             if upcard+holecard == 21:
                 self.resolve(h)
             else:            
-                #Step 5: One player at a time, let each make decisions until all hands stand (or bust)
+                #Step 5: One player at a time, let each make decisions until all hands stand/bust or surrender
                 for player in self.players:
-                    if player.hands[0]['Action'] is None: #We may pass a first action in a testing script
+                    if player.hands[0]['Action'] is None: #Allow an action to be forced (e.g. stand after DD)
                         actions = player.decide(upcard)
                     while not all(item in ['Stand','Surrender'] for item in actions):
                         self.act(player,actions)
                         actions = player.decide(upcard)
-                #Last Step:
+                #Step 6: Resolve the hand
                 self.resolve(h)
+        
         self.record_keeper = pd.DataFrame(self.record_keeper)
         sim_prog.empty()
         return
     
         
     def act(self,player,actions):
+        '''
+        Execute the dealer's response for all of the decisions stored in each player's list of actions
+        
+        Input: Player class and list of strings "actions" for each played hand
+        Output: None, hand actions and cards are updated as Player class attributes
+        '''
         for h,action in enumerate(actions):
+            #Hit: Deal one more card
             if action == 'Hit':
                 self.deck.deal(player.hands[h])
+            #Double: Trigger the double-down flag, deal one more card, and force a stand
             if action == 'Double':
                 self.deck.deal(player.hands[h])
                 player.hands[h]['Double'] = True
                 player.hands[h]['Action'] = 'Stand'
+            #Split: Create a new hand, and transfer the first card of the current hand. Hit both hands once
             if action == 'Split':
                 h_len = len(player.hands)
                 player.hands.append({'Order':h_len,'Cards':[],'Action':None,'Double':False})
@@ -252,19 +287,26 @@ class Game:
                 player.hands[h]['Cards'].pop(0)
                 self.deck.deal(player.hands[h])
                 self.deck.deal(player.hands[-1])
-                if player.hands[h]['Cards'][0]==11 and not self.HitAASplit: #If we can't re-hit split aces
+                if player.hands[h]['Cards'][0]==11 and not self.HitAASplit: #Disable re-hitting of split Aces as appropriate
                     player.hands[-1]['Action'] = 'Stand'
                     player.hands[h]['Action'] = 'Stand'
         return
     
     def resolve(self, h, ignore_record=False):
+        '''
+        Resolve all hands for all players in the current iteration of the game
+        
+        Inputs: Hand number in the simulation, integer "h"; ignore_record boolean to suppress manipulation of the game's record;
+            other properties inherited from Game class or Player classes therein
+        Outputs: List of float "dvalues" the incremental value for each hand, "outcomes" list of strings for related result
+            (e.g. [-1, +1.5] and ["Bust","Blackjack"])
+        '''
         #Outcome-Value Relationships
         values = {'Beat':-1,'Bust':-1,'Dealer Blackjack':-1,
                   'Surrender':-0.5,
                   'Push':0,
                   'Win':1,'Dealer Bust':1,
                   'Blackjack':self.blackjack}
-        
         outcomes = []
         dvalues = []
         for player in self.players:
@@ -281,40 +323,51 @@ class Game:
                 dealer_ncards = len(self.players[-1].hands[0]['Cards'])
                 player_ncards = len(hand['Cards'])
                 
+                #Level 1: Handle Dealer Natural Blackjack, exception for simultaneous Player Natural Blackjack
                 if (dealer_sum == 21 and dealer_ncards == 2) and not (player_sum == 21 and player_ncards == 2 and hand['Order']==0):
                     outcome = 'Dealer Blackjack'
+                #Level 2: Player Natural Blackjack (no Dealer Natural Blackjack)
                 elif (player_sum == 21 and player_ncards == 2 and hand['Order']==0) and not (dealer_sum == 21 and dealer_ncards == 2):
                     outcome = 'Blackjack'
+                #Level 3: Player bust leads to a loss that overrides any other conditions
                 elif player_sum > 21:
                     outcome = 'Bust'
+                #Level 4: Surrendering before a bust overrides other losses
                 elif hand['Action']=='Surrender':
                     outcome = 'Surrender'
+                #Level 5: Player does not bust, but Dealer does
                 elif dealer_sum > 21 and player_sum <= 21:
                     outcome = 'Dealer Bust'
+                #Level 6: Neither Player nor Dealer bust
                 elif dealer_sum <= 21 and player_sum <= 21:
+                    #6A: Player wins
                     if player_sum > dealer_sum:
                         outcome = 'Win'
+                    #6B: Dealer wins
                     elif dealer_sum > player_sum:
                         outcome = 'Beat'
+                    #6C: Player and Dealer tie (push), includes simultaneous Natural Blackjacks
                     elif dealer_sum == player_sum:
                         outcome = 'Push'
+                #Catch logic errors
                     else:
                         outcome = 'Error'
                 else:
                     outcome = 'Error'
-                
-                assert outcome != 'Error'
+                assert outcome != 'Error', "Logic error in hand resolution"
                 
                 record['Double'] = hand['Double']
                 record['Outcome'] = outcome
                 outcomes.append(outcome)
                 
+                #Calculate the incremental value of this result, multiply by 2 if Double-Down flag is True
                 dvalue = values[outcome]*(2**hand['Double'])
                 record['dValue'] = dvalue
                 player.bank += dvalue
                 dvalues.append(dvalue)
                 record['Player Bank'] = player.bank
                 
+                #Only store player records to minimize file size
                 if player.role != 'Dealer' and not ignore_record:
                     self.record_keeper.append(record)
                 

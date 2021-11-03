@@ -40,7 +40,7 @@ test_game = Game(options)
 test_game.play()
 records = test_game.record_keeper
 stats, edges = test_game.score()
-batch_means_results, batch_vars, fig_pmf, fig_ecdf = batch_means(test_game,20)
+batch_means_results, batch_vars, fig_pmf, fig_ecdf = batch_means(test_game,100)
 # plotly.offline.plot(fig_ecdf)
 # plotly.offline.plot(fig_pmf)
 
